@@ -1,0 +1,6 @@
+pytorch
+torch
+torchvision
+sentencepiece
+einops
+transformers
