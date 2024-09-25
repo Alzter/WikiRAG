@@ -1,3 +1,8 @@
+context/dumps/*
+context/wikipedia_extracted/*
+context/raw_text/*
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
