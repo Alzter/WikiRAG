@@ -1,5 +1,3 @@
-"Warning: Please do not click thumbs up/down when trying these examples on any model's web interface, as the data will be used for training future versions of those models.",,,,,,,,,,,,,,,,,,,
-,,,,,,,,,,,,,,,,,,,
 id,split,question,effective_year,next_review,false_premise,num_hops,fact_type,source,answer_0,answer_1,answer_2,answer_3,answer_4,answer_5,answer_6,answer_7,answer_8,answer_9,note
 0,TEST,What is the name of the first animal to land on the moon?,before 2022,occasionally,TRUE,one-hop,slow-changing,"https://en.wikipedia.org/wiki/Animals_in_space#:~:text=Two%20tortoises%20and,into%20lunar%20orbit).
 https://en.wikipedia.org/wiki/Neil_Armstrong#:~:text=On%20July%2020%2C%201969%2C%20Armstrong%20and%20Apollo%2011%20Lunar%20Module%20(LM)%20pilot%20Buzz%20Aldrin%20became%20the%20first%20people%20to%20land%20on%20the%20Moon",No animal has ever landed on the moon yet.,"Since humans are animals, one could say Neil Armstrong.",,,,,,,,,
