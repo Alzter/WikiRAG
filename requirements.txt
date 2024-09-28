@@ -4,3 +4,4 @@ torchvision
 sentencepiece
 einops
 transformers
+nltk
