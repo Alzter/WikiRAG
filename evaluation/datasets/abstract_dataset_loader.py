@@ -15,7 +15,7 @@ Abstract dataset class to load a dataset and provide entries.
 from abc import ABC, abstractmethod
 
 class DatasetLoader(ABC):
-    registered_datasets = ["morehopqa", "morehopqa-150"]
+    registered_datasets = ["morehopqa", "morehopqa-150", "freshqa"]
     
     @abstractmethod
     def items(self): 
@@ -25,10 +25,13 @@ class DatasetLoader(ABC):
     @staticmethod
     def create(dataset_name):
         from datasets.morehopqa_loader import MorehopqaLoader, Morehopqa150Loader
+        from datasets.freshqa_loader import FreshQALoader
         if dataset_name == "morehopqa":
             return MorehopqaLoader()
         elif dataset_name == "morehopqa-150":
             return Morehopqa150Loader()
+        elif dataset_name == "freshqa":
+            return FreshQALoader()
         else:
             raise ValueError(f"Dataset {dataset_name} not found.")
         
