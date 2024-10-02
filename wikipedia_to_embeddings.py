@@ -14,7 +14,7 @@ wikidownload.download_and_extract_wikipedia_dump(WIKIPEDIA_DOWNLOAD_PATH, downlo
 EMBEDDINGS_SAVE_PATH = "context\\wikipedia_embeddings"
 
 print(f"Embedding Wikipedia dump and saving to folder: {EMBEDDINGS_SAVE_PATH}")
-embeddings = CorpusEmbedding.corpus_to_embeddings(WIKIPEDIA_DOWNLOAD_PATH, use_late_chunking=False)
+embeddings = CorpusEmbedding.corpus_to_embeddings(WIKIPEDIA_DOWNLOAD_PATH, use_late_chunking=True)
 
 print("Embedding successful. Saving Wikipedia corpus.")
 np.save(EMBEDDINGS_SAVE_PATH, embeddings, allow_pickle=True)
