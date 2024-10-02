@@ -5,20 +5,20 @@ from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
 
 class CorpusEmbedding():
 
-    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", quantized = True):
+    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en"):#, quantized = True):
         """
         Create the model and tokenizer needed.
         """
         # Run the device on GPU only if NVIDIA CUDA drivers are installed.
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=quantized,
-            bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
-        )
+        # quantization_config = BitsAndBytesConfig(
+        #     load_in_4bit=quantized,
+        #     bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
+        # )
 
-        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
+        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True, device_map='cuda')#, quantization_config = quantization_config)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map='cuda')#, quantization_config = quantization_config)
 
     def chunk_by_sentences(raw_text_corpus_path: str, tokenizer: callable):
         """

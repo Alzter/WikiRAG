@@ -8,12 +8,12 @@ class WikipediaDownload():
     Downloads all of Wikipedia and converts it to raw text using [WikiExtractor](https://github.com/attardi/wikiextractor).
     """
 
-    def download_wikipedia(output_path ='wikipedia_dump_file.bz2', download_subset = True, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
+    def download_wikipedia_dump(dump_file_path ='wikipedia_dump_file.bz2', download_subset = True, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
         """
         Downloads the full Wikipedia dump or a 5 MB subset.
 
         Args:
-            output_path (str, optional): Path where the downloaded file will be saved (default: 'wikipedia_dump_file.bz2').
+            dump_file_path (str, optional): Path where the downloaded file will be saved (default: 'wikipedia_dump_file.bz2').
             download_subset (bool): If true, only downloads a 5 MB subset of the Wikipedia dump.
             dump_url (str, optional): The URL of the Wikipedia dump file to be downloaded. Defaults to the latest English Wikipedia dump.
         
@@ -90,7 +90,7 @@ class WikipediaDownload():
 
         return output_dir
 
-    def download_and_extract(self, output_dir, download_subset = False, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
+    def download_and_extract_wikipedia_dump(self, output_dir, download_subset = False, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
         """
         Downloads a wikipedia dump and extracts the raw text from it.
         
@@ -105,7 +105,7 @@ class WikipediaDownload():
         """
         # Download wikipedia dump archive in .bz2 format
         tmp_dump_path = 'tmp/wikipedia_dump_file.bz2'
-        wikipedia_dump_path = self.download_wikipedia(download_subset, dump_url, tmp_dump_path)
+        wikipedia_dump_path = self.download_wikipedia_dump(download_subset, dump_url, tmp_dump_path)
 
         # Extract raw text from wikipedia dump
         wikipedia_output_dir = self.extract_wikipedia_dump(wikipedia_dump_path, download_subset, output_dir=output_dir, use_local_wikiextractor=True)
