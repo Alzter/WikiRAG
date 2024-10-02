@@ -8,16 +8,14 @@ class WikipediaDownload():
     Downloads all of Wikipedia and converts it to raw text using [WikiExtractor](https://github.com/attardi/wikiextractor).
     """
 
-    def download_wikipedia(dump_url, download_subset, 
-                        dump_file_path='dumps/wikipedia_dump_file.bz2'):
+    def download_wikipedia(output_path ='wikipedia_dump_file.bz2', download_subset = True, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
         """
         Downloads the full Wikipedia dump or a 5 MB subset.
 
         Args:
-            dump_url (str): The URL of the Wikipedia dump file to be downloaded.
+            output_path (str, optional): Path where the downloaded file will be saved (default: 'wikipedia_dump_file.bz2').
             download_subset (bool): If true, only downloads a 5 MB subset of the Wikipedia dump.
-            dump_file_path (str, optional): Path where the downloaded file will be
-            saved (default: 'wikipedia_dump_file.bz2').
+            dump_url (str, optional): The URL of the Wikipedia dump file to be downloaded. Defaults to the latest English Wikipedia dump.
         
         Returns:
             path (str): The path to the saved dump file.
@@ -64,7 +62,7 @@ class WikipediaDownload():
 
         
         Returns:
-            None
+            output_dir (str): The location where the Wikipedia raw text dump is stored.
         """
 
         #  Create output directory if it does not exist
@@ -89,3 +87,30 @@ class WikipediaDownload():
             subprocess.run(extractor_command, check=True)
 
         print(f"Extraction completed.  Extracted files are saved in {output_dir}")
+
+        return output_dir
+
+    def download_and_extract(self, output_dir, download_subset = False, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
+        """
+        Downloads a wikipedia dump and extracts the raw text from it.
+        
+        Args:
+            output_dir (str): The directory where the extracted text will be saved.
+                                        Defaults to 'wikipedia_extracted'.
+            download_subset (bool, optional): If true, only downloads a 5 MB subset of the Wikipedia dump.
+            dump_url (str, optional): The URL of the Wikipedia dump file to be downloaded.
+
+        Returns:
+            output_dir (str): The location where the Wikipedia raw text dump is stored.
+        """
+        # Download wikipedia dump archive in .bz2 format
+        tmp_dump_path = 'tmp/wikipedia_dump_file.bz2'
+        wikipedia_dump_path = self.download_wikipedia(download_subset, dump_url, tmp_dump_path)
+
+        # Extract raw text from wikipedia dump
+        wikipedia_output_dir = self.extract_wikipedia_dump(wikipedia_dump_path, download_subset, output_dir=output_dir, use_local_wikiextractor=True)
+
+        # Delete original dump archive - we don't need it anymore
+        os.removedirs(tmp_dump_path)
+
+        return wikipedia_output_dir
