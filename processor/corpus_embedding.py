@@ -1,24 +1,24 @@
-
+import numpy as np
 import json, os
 import torch
 from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
 
 class CorpusEmbedding():
 
-    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en"):#, quantized = True):
+    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", quantized = False):
         """
         Create the model and tokenizer needed.
         """
         # Run the device on GPU only if NVIDIA CUDA drivers are installed.
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        # quantization_config = BitsAndBytesConfig(
-        #     load_in_4bit=quantized,
-        #     bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
-        # )
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=quantized,
+            bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
+        )
 
-        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True, device_map='cuda')#, quantization_config = quantization_config)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map='cuda')#, quantization_config = quantization_config)
+        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
 
     def chunk_by_sentences(raw_text_corpus_path: str, tokenizer: callable):
         """
@@ -118,16 +118,17 @@ class CorpusEmbedding():
 
         return outputs
 
-    def corpus_to_embeddings(self, raw_text_corpus_path : str, use_late_chunking = True):
+    def corpus_to_embeddings(self, raw_text_corpus_path : str, output_dir : str, use_late_chunking = True):
         """
-        Converts a raw text knowledge corpus into a series of chunked embeddings.
+        Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``.
 
         Args:
             raw_text_corpus_path (str): The path of the raw text corpus to read.
-            use_late_chunking (bool): If true, performs text embedding *before* text chunking. This is a technique known as [late chunking](https://arxiv.org/abs/2409.04701), which significantly improves semantic meaning of embeddings.
+            output_dir (str): The directory where the embeddings will be saved.
+            use_late_chunking (bool, optional): If true, performs text embedding *before* text chunking. This is a technique known as [late chunking](https://arxiv.org/abs/2409.04701), which significantly improves semantic meaning of embeddings.
         
         Returns:
-            embeddings (list): A list of chunk embeddings from the knowledge base.
+            output_dir (str): The directory where the embeddings were saved.
         """
 
         # Read the entire corpus as a single string.
@@ -148,4 +149,7 @@ class CorpusEmbedding():
         else:
             embeddings = self.model.encode(chunks)
         
-        return embeddings
+        print(f"Embedding successful. Saving to path: {output_dir}")
+        np.save(output_dir, embeddings, allow_pickle=True)
+
+        return output_dir

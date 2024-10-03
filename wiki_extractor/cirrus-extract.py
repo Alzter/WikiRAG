@@ -233,15 +233,15 @@ def main():
 
     input_file = args.input
 
-    output_path = args.output
-    if output_path != '-' and not os.path.isdir(output_path):
+    output_dir = args.output
+    if output_dir != '-' and not os.path.isdir(output_dir):
         try:
-            os.makedirs(output_path)
+            os.makedirs(output_dir)
         except:
-            logging.error('Could not create: %s', output_path)
+            logging.error('Could not create: %s', output_dir)
             return
 
-    process_dump(input_file, output_path, file_size, args.compress)
+    process_dump(input_file, output_dir, file_size, args.compress)
 
 
 if __name__ == '__main__':

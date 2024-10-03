@@ -2,6 +2,8 @@ context/dumps/*
 context/wikipedia_extracted/*
 context/raw_text/*
 
+tests/citation_fix.ipynb
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

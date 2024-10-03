@@ -3277,12 +3277,12 @@ def main(
         file.close()
         return
 
-    output_path = output
-    if output_path != '-' and not os.path.isdir(output_path):
+    output_dir = output
+    if output_dir != '-' and not os.path.isdir(output_dir):
         try:
-            os.makedirs(output_path)
+            os.makedirs(output_dir)
         except:
-            logging.error('Could not create: %s', output_path)
+            logging.error('Could not create: %s', output_dir)
             return
 
     filter_category = filter_category
@@ -3307,7 +3307,7 @@ def main(
             logging.info("Including categories:")
             logging.info(str(len(options.filter_category_include)))
 
-    process_dump(input_file, templates, output_path, file_size,
+    process_dump(input_file, templates, output_dir, file_size,
                  compress, processes)
 
 def createLogger(quiet, debug, log_file):

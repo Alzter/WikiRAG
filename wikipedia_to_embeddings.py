@@ -14,7 +14,4 @@ print(f"Downloading Wikipedia as raw text and saving to {WIKIPEDIA_DOWNLOAD_PATH
 WikipediaDownload.download_and_extract_wikipedia_dump(WIKIPEDIA_DOWNLOAD_PATH, download_subset=download_all)
 
 print(f"Embedding Wikipedia dump and saving to folder: {out_path}")
-embeddings = CorpusEmbedding.corpus_to_embeddings(WIKIPEDIA_DOWNLOAD_PATH, use_late_chunking=True)
-
-print("Embedding successful. Saving Wikipedia corpus.")
-np.save(out_path, embeddings, allow_pickle=True)
+embedding_path = CorpusEmbedding.corpus_to_embeddings(WIKIPEDIA_DOWNLOAD_PATH, use_late_chunking=True)

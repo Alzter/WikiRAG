@@ -1,8 +1,10 @@
+import numpy as np
 from typing import Annotated # Better type hints library for Python (read: less bad)
 
 from fastapi import FastAPI, HTTPException, File, UploadFile
 
 from processor.wikipedia_corpus_download import WikipediaDownload
+from processor.corpus_embedding import CorpusEmbedding
 
 app = FastAPI()
 
@@ -26,15 +28,28 @@ async def query_rag(query):
 #     raise HTTPException(501, "Document pre-process method not yet implemented.")
 #     return {"message": "Not implemented yet"}
 
-@app.get("/download_wikipedia_dump/{dump_url}")
-async def download_wiki_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "wikipedia", download_subset:bool = False):
+@app.get("/download_wikipedia_dump/")
+async def download_wiki_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/wikipedia", download_subset:bool = False):
     """
     Download a Wikipedia dump, convert it to raw text, and save it to ``output_dir``.
     """
 
-    output_dir = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=output_dir, dump_url=dump_url, download_subset=download_subset)
+    save_path = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=output_dir, dump_url=dump_url, download_subset=download_subset)
 
     return {
-        "dump_save_path" : output_dir
+        "dump_save_path" : save_path
+    }
+
+@app.get("/raw_text_corpus_to_embeddings/")
+async def raw_text_corpus_to_embeddings(corpus_path : str, output_dir : str = "context/embeddings", embedding_model : str = "jinaai/jina-embeddings-v2-base-en", use_model_quantization = False, use_late_chunking : bool = False):
+    """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``."""
+    
+    # Load the embedding and tokenizer model
+    model = CorpusEmbedding()
+
+    save_path = model.corpus_to_embeddings(corpus_path, output_dir, use_late_chunking=use_late_chunking)
+
+    return {
+        "embeddings_save_path" : save_path
     }
 
