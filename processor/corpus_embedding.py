@@ -6,7 +6,7 @@ from language_model import LanguageModel
 
 class CorpusEmbedding(LanguageModel):
 
-    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", quantized = False):
+    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", quantized = False, use_gpu=True):
         return super().__init__(model_name, quantized)
 
     def chunk_by_sentences(raw_text_corpus_path: str, tokenizer: callable):

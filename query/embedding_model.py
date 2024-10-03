@@ -1,7 +1,5 @@
 #from typing import Union
 import torch
-import torch.nn.functional as F
-from transformers import AutoModel, AutoTokenizer
 from language_model import LanguageModel
 
 class EmbeddingModel(LanguageModel):
