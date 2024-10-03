@@ -2446,12 +2446,13 @@ wgUrlProtocols = [
 # as well as U+3000 is IDEOGRAPHIC SPACE for bug 19052
 EXT_LINK_URL_CLASS = r'[^][<>"\x00-\x20\x7F\s]'
 ANCHOR_CLASS = r'[^][\x00-\x08\x0a-\x1F]'
+
+# Python 3.12 fix from: https://github.com/attardi/wikiextractor/commit/ab8988ebfa9e4557411f3d4c0f4ccda139e18875
 ExtLinkBracketedRegex = re.compile(
-    r'(?i)\[((?:' + '|'.join(wgUrlProtocols) + ')' + EXT_LINK_URL_CLASS + r'+)' +
-    r'\s*((?:' + ANCHOR_CLASS + r'|\[\[' + ANCHOR_CLASS + r'+\]\])' + r'*?)\]',
+    '(?i)\[((' + '|'.join(wgUrlProtocols) + ')' + EXT_LINK_URL_CLASS + r'+)\s*([^\]\x00-\x08\x0a-\x1F]*?)\]',
     re.S | re.U)
 # A simpler alternative:
-# ExtLinkBracketedRegex = re.compile(r'\[(.*?)\](?!])')
+# ExtLinkBracketedRegex = re.compile(r'(?i)\[(.*?)\](?!])', re.S | re.U)
 
 EXT_IMAGE_REGEX = re.compile(
     r"""(?i)^(http://|https://)([^][<>"\x00-\x20\x7F\s]+)
