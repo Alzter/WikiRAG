@@ -8,14 +8,13 @@ class EmbeddingModel(LanguageModel):
 
     def __init__(self, model_name = "avsolatorio/NoInstruct-small-Embedding-v0", quantized = False):
         """
-        Create embedding model: [NoInstruct-small-Embedding-v0](https://huggingface.co/avsolatorio/NoInstruct-small-Embedding-v0)
+        Create embedding model. Source: [NoInstruct-small-Embedding-v0](https://huggingface.co/avsolatorio/NoInstruct-small-Embedding-v0).
         """
         return super().__init__(model_name, quantized)
     
-    # Source: https://huggingface.co/avsolatorio/NoInstruct-small-Embedding-v0
     def get_embedding(self, text: str | list[str], input_is_query = False):
         """
-        Generate an embedding for a given text.
+        Generate an embedding for a given text. Source: [NoInstruct-small-Embedding-v0](https://huggingface.co/avsolatorio/NoInstruct-small-Embedding-v0).
         
         Args:
             text (str/list[str]): The text or list of texts to be embedded.
