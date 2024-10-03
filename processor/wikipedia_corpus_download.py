@@ -109,12 +109,12 @@ class WikipediaDownload():
         """
         # Download wikipedia dump archive in .bz2 format
         
-        wikipedia_dump_path = WikipediaDownload.download_wikipedia_dump(output_dir=tmp_dump_path, download_subset=download_subset, dump_url=dump_url)
+        wikipedia_dump_path = WikipediaDownload.download_wikipedia_dump(output_dir, download_subset=download_subset, dump_url=dump_url)
 
         # Extract raw text from wikipedia dump
         wikipedia_output_dir = WikipediaDownload.extract_wikipedia_dump(wikipedia_dump_path, is_subset=download_subset, output_dir=output_dir, use_local_wikiextractor=True)
 
         # Delete original dump archive - we don't need it anymore
-        os.remove(tmp_dump_path)
+        os.remove(wikipedia_dump_path)
 
         return wikipedia_output_dir
