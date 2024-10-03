@@ -9,19 +9,20 @@ class WikipediaDownload():
     """
 
     @staticmethod
-    def download_wikipedia_dump(dump_file_path ='wikipedia_dump_file.bz2', download_subset = True, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
+    def download_wikipedia_dump(output_dir : str, download_subset = True, dump_url = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2'):
         """
-        Downloads the full Wikipedia dump or a 5 MB subset.
+        Downloads a dump of Wikipedia from https://dumps.wikimedia.org/ and saves it to directory ``output_dir``.
 
         Args:
-            dump_file_path (str, optional): Path where the downloaded file will be saved (default: 'wikipedia_dump_file.bz2').
+            output_dir (str): The directory where the raw Wikipedia dump will be saved to.
             download_subset (bool): If true, only downloads a 5 MB subset of the Wikipedia dump.
             dump_url (str, optional): The URL of the Wikipedia dump file to be downloaded. Defaults to the latest English Wikipedia dump.
         
         Returns:
-            path (str): The path to the saved dump file.
+            dump_file_path (str): The path to the saved dump file.
         """
 
+        dump_file_path = os.path.join(output_dir, 'wikipedia_dump_file.bz2')
         dump_folder = os.path.split(dump_file_path)[0]
         if not os.path.exists(dump_folder): os.makedirs(dump_folder)
 
@@ -107,7 +108,7 @@ class WikipediaDownload():
             output_dir (str): The location where the Wikipedia raw text dump is stored.
         """
         # Download wikipedia dump archive in .bz2 format
-        tmp_dump_path = os.path.join(output_dir, "wikipedia_dump_file.bz2")
+        
         wikipedia_dump_path = WikipediaDownload.download_wikipedia_dump(output_dir=tmp_dump_path, download_subset=download_subset, dump_url=dump_url)
 
         # Extract raw text from wikipedia dump
