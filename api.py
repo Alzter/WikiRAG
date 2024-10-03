@@ -8,26 +8,6 @@ from processor.corpus_embedding import CorpusEmbedding
 
 app = FastAPI()
 
-
-@app.get("/query_rag/{query}")
-async def query_rag(query):
-
-    # TODO: Just draw the f--- owl
-    
-    raise HTTPException(501, "RAG query method not yet implemented.")
-    return {"response": f"Not implemented yet: {query}"}
-
-# @app.post("/preprocess_document")
-# async def preprocess_document(document : UploadFile):
-
-#     filename = document.filename
-#     extension = document.content_type
-
-#     # TODO: Raise assertion that documents must be of PDF type
-
-#     raise HTTPException(501, "Document pre-process method not yet implemented.")
-#     return {"message": "Not implemented yet"}
-
 @app.get("/download_wikipedia_dump/")
 async def download_wiki_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/wikipedia", download_subset:bool = False):
     """
@@ -53,3 +33,21 @@ async def raw_text_corpus_to_embeddings(corpus_path : str, output_dir : str = "c
         "embeddings_save_path" : save_path
     }
 
+@app.get("/query_rag/{query}")
+async def query_rag(query):
+
+    # TODO: Just draw the f--- owl
+    
+    raise HTTPException(501, "RAG query method not yet implemented.")
+    return {"response": f"Not implemented yet: {query}"}
+
+# @app.post("/preprocess_document")
+# async def preprocess_document(document : UploadFile):
+
+#     filename = document.filename
+#     extension = document.content_type
+
+#     # TODO: Raise assertion that documents must be of PDF type
+
+#     raise HTTPException(501, "Document pre-process method not yet implemented.")
+#     return {"message": "Not implemented yet"}
