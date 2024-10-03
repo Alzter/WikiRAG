@@ -9,7 +9,7 @@ from processor.corpus_embedding import CorpusEmbedding
 app = FastAPI()
 
 @app.get("/download_wikipedia_dump/")
-async def download_wiki_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/wikipedia", download_subset:bool = False):
+async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/wikipedia", download_subset:bool = False):
     """
     Download a Wikipedia dump, convert it to raw text, and save it to ``output_dir``.
     """
