@@ -1,6 +1,4 @@
-context/dumps/*
-context/wikipedia_extracted/*
-context/raw_text/*
+context/*
 
 tests/citation_fix.ipynb
 
