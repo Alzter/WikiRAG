@@ -5,8 +5,8 @@ from abc import ABC
 
 class LanguageModel(ABC):
     """
-    Abstract class which instantiates an embedding and tokenizer model when instantiated using the ``transformers`` library.
-    Model name and quantization is configurable in the ``__init__`` method parameters.
+    Abstract class which instantiates an embedding and tokenizer model using the ``transformers`` library when it is created.
+    Model name and quantization are configurable in the ``__init__`` method parameters.
     """
 
     def __init__(self, model_name, quantized, use_gpu=True):
