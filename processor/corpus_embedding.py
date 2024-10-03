@@ -2,6 +2,7 @@ import numpy as np
 import json, os
 import torch
 from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
+import sys; sys.path.append("processor")
 
 class CorpusEmbedding():
 
