@@ -104,13 +104,13 @@ class WikipediaDownload():
             output_dir (str): The location where the Wikipedia raw text dump is stored.
         """
         # Download wikipedia dump archive in .bz2 format
-        tmp_dump_path = 'tmp/wikipedia_dump_file.bz2'
+        tmp_dump_path = os.path.join(output_dir, "wikipedia_dump_file.bz2")
         wikipedia_dump_path = self.download_wikipedia_dump(download_subset, dump_url, tmp_dump_path)
 
         # Extract raw text from wikipedia dump
         wikipedia_output_dir = self.extract_wikipedia_dump(wikipedia_dump_path, download_subset, output_dir=output_dir, use_local_wikiextractor=True)
 
         # Delete original dump archive - we don't need it anymore
-        os.removedirs(tmp_dump_path)
+        os.remove(tmp_dump_path)
 
         return wikipedia_output_dir
