@@ -2,23 +2,12 @@ import numpy as np
 import json, os
 import torch
 from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
+from language_model import LanguageModel
 
-class CorpusEmbedding():
+class CorpusEmbedding(LanguageModel):
 
     def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", quantized = False):
-        """
-        Create the model and tokenizer needed.
-        """
-        # Run the device on GPU only if NVIDIA CUDA drivers are installed.
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=quantized,
-            bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
-        )
-
-        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
+        return super().__init__(model_name, quantized)
 
     def chunk_by_sentences(raw_text_corpus_path: str, tokenizer: callable):
         """

@@ -1,0 +1,26 @@
+import numpy as np
+import torch
+from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
+from abc import ABC
+
+class LanguageModel(ABC):
+    """
+    Abstract class which instantiates an embedding and tokenizer model when instantiated using the ``transformers`` library.
+    Model name and quantization is configurable in the ``__init__`` method parameters.
+    """
+
+    def __init__(self, model_name, quantized, use_gpu=True):
+        """
+        Create the model and tokenizer needed.
+        """
+        # Run the device on GPU only if NVIDIA CUDA drivers are installed.
+        self.device = 'cuda' if torch.cuda.is_available() and use_gpu else 'cpu'
+
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=quantized,
+            bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
+        )
+
+        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
+    
