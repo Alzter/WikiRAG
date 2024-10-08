@@ -6,8 +6,8 @@ from rank_bm25 import BM25Okapi
 import torch
 
 class Document():
-    def __init__(self, title : str, summary : str, summary_embedding : torch.Tensor):
-        self.title = title; self.summary = summary; self.summary_embedding = summary_embedding
+    def __init__(self, title : str, summary : str, embedding : torch.Tensor):
+        self.title = title; self.summary = summary; self.embedding = embedding
 
 class Embedding():
     def __init__(self, raw_text : str, embedding : torch.Tensor):
@@ -156,7 +156,7 @@ class Retrieval():
             embedding_data = np.load(summary_embedding, encoding='bytes', allow_pickle=True)
             embedding_data = torch.Tensor(embedding_data)
 
-            document = Document(title=parent_directory, summary=summary_text, summary_embedding=embedding_data)
+            document = Document(title=parent_directory, summary=summary_text, embedding=embedding_data)
 
             documents.append(document)
     
@@ -194,9 +194,14 @@ class Retrieval():
         
         return embeddings
     
-    def get_context(self, query : str, num_contexts = 10, use_sparse_retrieval = True) -> list[str]:
+    def get_context(self, query : str, num_contexts = 10, use_sparse_retrieval = False, exhaustive = False) -> list[str]:
+        
+        print("Embedding user query for dense retrieval:")
 
-        if not use_sparse_retrieval:
+        # Convert query into an embedding
+        query_embedding = self.embedding_model.get_embedding(query, input_is_query=True)
+
+        if exhaustive:
 
             # Load all embeddings into memory (this takes a long time)
             if not hasattr(self, "all_embeddings"):
@@ -207,24 +212,24 @@ class Retrieval():
             embeddings = self.all_embeddings
             
         else:
-            print("Finding best article to use as context with sparse retrieval:")
+            if use_sparse_retrieval:
+                print("Finding best article to use as context with sparse retrieval:")
 
-            # Use BM25 (sparse retrieval) to acquire one Wikipedia article
-            # which has the most n-gram lexical matches to the user query.
-            best_document = SparseRetrieval.get_k_best_documents(1, query, self.documents)[0]
+                # Use BM25 (sparse retrieval) to acquire one Wikipedia article
+                # which has the most n-gram lexical matches to the user query.
+                best_document = SparseRetrieval.get_k_best_documents(1, query, self.documents)[0]
+            else:
+
+                print("Finding best article to use as context with dense retrieval:")
+
+                best_document = DenseRetrieval.get_k_best_documents(1, query_embedding, self.documents)[0]
 
             print(f"Using Wikipedia article: {best_document.title} for context")
 
             # Retrieve all chunk embeddings from said document
             embeddings = self.get_document_embeddings(best_document.title)
-            
-            print(f"Found {len(embeddings)} chunks within article.")
 
-            print("Embedding user query for dense retrieval:")
-
-        # Convert query into an embedding
-        query_embedding = self.embedding_model.get_embedding(query, input_is_query=True)
-
+        print(f"Found {len(embeddings)} chunks for within context.")
         print("Finding best article chunks to use as context with dense retrieval:")
 
         best_embeddings = DenseRetrieval.get_k_best_documents(num_contexts, query_embedding, embeddings)
