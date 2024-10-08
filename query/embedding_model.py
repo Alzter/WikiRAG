@@ -1,5 +1,6 @@
 #from typing import Union
 import torch
+import sys; sys.path.append("../")
 from language_model import LanguageModel
 
 class EmbeddingModel(LanguageModel):
