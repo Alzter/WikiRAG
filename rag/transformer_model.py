@@ -3,13 +3,13 @@ import torch
 from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from abc import ABC
 
-class LanguageModel(ABC):
+class TransformerModel(ABC):
     """
     Abstract class which instantiates an embedding and tokenizer model using the ``transformers`` library when it is created.
     Model name and quantization are configurable in the ``__init__`` method parameters.
     """
 
-    def __init__(self, model_name, causal, quantized, use_gpu=True):
+    def __init__(self, model_name : str, causal : bool, quantized : bool, use_gpu : bool =True):
         """
         Create the model and tokenizer needed.
         """
@@ -23,7 +23,7 @@ class LanguageModel(ABC):
             bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
         )
 
-        print(f"Loading embedding model and tokenizer from transformers: {model_name}\nPlease wait...\n")
+        print(f"Loading transformer model and tokenizer from transformers library: {model_name}\nPlease wait...\n")
 
         model_method = AutoModelForCausalLM if causal else AutoModel
         

@@ -3,8 +3,8 @@ from typing import Annotated # Better type hints library for Python (read: less 
 
 from fastapi import FastAPI, HTTPException, File, UploadFile
 
-from processor.wikipedia_corpus_download import WikipediaDownload
-from processor.corpus_embedding import CorpusEmbedding
+from rag.wikipedia_corpus_download import WikipediaDownload
+from rag.corpus_embedding import CorpusEmbedding
 
 app = FastAPI()
 

@@ -1,9 +1,9 @@
 import transformers
 import torch
-from language_model import LanguageModel
-from Prompt import prompt
+from rag.transformer_model import TransformerModel
+from model_prompts import Prompt
 
-class QueryDecomposer(LanguageModel):
+class QueryDecomposer(TransformerModel):
 
     def __init__(self, model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct", causal = True, quantized = True):
         super().__init__(model_name, causal, quantized)
