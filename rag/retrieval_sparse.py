@@ -1,5 +1,6 @@
 import k_best
 from rank_bm25 import BM25Okapi
+from retrieval import Document
 
 class SparseRetrieval():
     """
@@ -10,7 +11,7 @@ class SparseRetrieval():
     """
 
     @staticmethod
-    def get_scores(query : str, corpus : list[str]):
+    def get_scores(query : str, corpus : list[Document]) -> list[float]:
         """
         Given an input query string and a corpus (a list of document strings),
         evaluate the lexical similarity between each document in the corpus and the query
@@ -20,11 +21,14 @@ class SparseRetrieval():
 
         Args:
             query (str): "windy London"
-            corpus (list[str]): ["Hello there good man!", "It is quite windy in London", "How is the weather today?"]
+            corpus (list[Document]): ["Hello there good man!", "It is quite windy in London", "How is the weather today?"]
 
         Returns:
             scores (ndarray[int]): array([0.        , 0.93729472, 0.        ])
         """
+
+        # Extract summary text all from documents
+        corpus = [document.summary for document in corpus]
 
         tokenized_corpus = [doc.split(" ") for doc in corpus]
 
@@ -35,7 +39,7 @@ class SparseRetrieval():
         return bm25.get_scores(tokenized_query)
 
     @staticmethod
-    def get_k_best_documents(k : int, query : str, corpus : list[str]):
+    def get_k_best_documents(k : int, query : str, corpus : list[Document]) -> list[Document]:
         """
         Given an input query, retrieve k most similar documents from the corpus
         using sparse retrieval (lexical matching) in descending order of similarity.
@@ -43,7 +47,7 @@ class SparseRetrieval():
         Args:
             n (int): The number of documents to retrieve. E.g., 1.
             query (str): "windy London"
-            corpus (list[str]): ["Hello there good man!", "It is quite windy in London", "How is the weather today?"]
+            corpus (list[Document]): ["Hello there good man!", "It is quite windy in London", "How is the weather today?"]
 
         Returns:
             top_k (list[str]): The k most matching items in the corpus. E.g., ['It is quite windy in London']

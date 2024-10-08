@@ -10,14 +10,14 @@ class DenseRetrieval():
     """
 
     @staticmethod
-    def compare_documents(a : torch.Tensor, b : torch.Tensor):
+    def compare_documents(a : torch.Tensor, b : torch.Tensor) -> float:
         """
         Returns the similarity between embeddings a and b using cosine similarity.
         """
         return torch.nn.functional.cosine_similarity(a, b, dim=-1)
 
     @staticmethod
-    def get_scores(query : torch.Tensor, corpus : list[Embedding]):
+    def get_scores(query : torch.Tensor, corpus : list[Embedding]) -> list[float]:
         """
         Given an input query embedding and a corpus (a list of document embeddings),
         evaluate the semantic similarity between each document in the corpus and the query
@@ -34,7 +34,7 @@ class DenseRetrieval():
         return scores
     
     @staticmethod
-    def get_k_best_documents(k : int, query : torch.Tensor, corpus : list[Embedding]):
+    def get_k_best_documents(k : int, query : torch.Tensor, corpus : list[Embedding]) -> list[Embedding]:
         """
         Given an input query, retrieve k most similar embeddings from the corpus
         using dense retrieval (cosine similarity of embeddings) in descending order of similarity.
