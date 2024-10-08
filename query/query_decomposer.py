@@ -1,6 +1,7 @@
 import transformers
 import torch
 from language_model import LanguageModel
+from Prompt import prompt
 
 class QueryDecomposer(LanguageModel):
 
@@ -32,18 +33,18 @@ class QueryDecomposer(LanguageModel):
             sub_question (str): The sub-question extracted from the full ``chat_history``. Context can be retrieved for this question.
         """
 
-        if input is str:
+        if isinstance(input, str):
             input = [
                 {'role':'system','content':Prompt.cot_prompt}, # Question Decomposition Specialist Prompt
-                {'role':'user','content':f"Let's break down this complex question: {question}"}
+                {'role':'user','content':f"Let's break down this complex question: {input}"}
             ]
-        
+
         chat_history = self.pipeline(
             input,
             do_sample=True,
             top_k=10,
             num_return_sequences=1,
-            eos_token_id= self.tokenizer.eos_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
             truncation = True,
             max_new_tokens=50
         )
