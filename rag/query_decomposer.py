@@ -1,20 +1,12 @@
 import transformers
 import torch
-from language_model import LanguageModel
-from Prompt import prompt
+from language_model import LLM
+from model_prompts import Prompt
 
-class QueryDecomposer(LanguageModel):
+class QueryDecomposer(LLM):
 
-    def __init__(self, model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct", causal = True, quantized = True):
-        super().__init__(model_name, causal, quantized)
-
-        self.pipeline = transformers.pipeline(
-            "text-generation",
-            model=self.model,
-            tokenizer=self.tokenizer,
-            torch_dtype=torch.float16,
-            device_map="auto",
-        )
+    def __init__():
+        return super().__init__()
     
     def decompose_question_step(self, input : str | list, max_tokens : int = 50):
         """
@@ -48,6 +40,8 @@ class QueryDecomposer(LanguageModel):
             truncation = True,
             max_new_tokens=50
         )
+
+        self.generate_response(input, max_new_tokens=50)
 
         assistant_response = chat_history[0]['generated_text'][-1]
         sub_question = assistant_response['content']

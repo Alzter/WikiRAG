@@ -3,13 +3,13 @@ from typing import Annotated # Better type hints library for Python (read: less 
 
 from fastapi import FastAPI, HTTPException, File, UploadFile
 
-from processor.wikipedia_corpus_download import WikipediaDownload
-from processor.corpus_embedding import CorpusEmbedding
+from rag.wikipedia_corpus_download import WikipediaDownload
+from rag.corpus_embedding import CorpusEmbedding
 
 app = FastAPI()
 
 @app.get("/download_wikipedia_dump/")
-async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/wikipedia", download_subset:bool = False):
+async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/raw_text", download_subset:bool = False):
     """
     Download a Wikipedia dump, convert it to raw text, and save it to ``output_dir``.
     """
@@ -20,20 +20,20 @@ async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/
         "dump_save_path" : save_path
     }
 
-@app.get("/extract_raw_text_from_wikipedia/")
-async def extract_raw_text_from_wikipedia_dump(dump_file_path : str, output_dir : str = "context/wikipedia", is_subset:bool = False):
-    """
-    Extract raw text from a Wikipedia dump using WikiExtractor and save it to ``output_dir``.
-    """
+# @app.get("/extract_raw_text_from_wikipedia/")
+# async def extract_raw_text_from_wikipedia_dump(dump_file_path : str, output_dir : str = "context/wikipedia", is_subset:bool = False):
+#     """
+#     Extract raw text from a Wikipedia dump using WikiExtractor and save it to ``output_dir``.
+#     """
 
-    save_path = WikipediaDownload.extract_wikipedia_dump(dump_file_path, output_dir=output_dir, is_subset=is_subset)
+#     save_path = WikipediaDownload.extract_wikipedia_dump(dump_file_path, output_dir=output_dir, is_subset=is_subset)
 
-    return {
-        "extracted_save_path" : save_path
-    }
+#     return {
+#         "extracted_save_path" : save_path
+#     }
 
 @app.get("/raw_text_corpus_to_embeddings/")
-async def raw_text_corpus_to_embeddings(corpus_path : str = "context/wikipedia", output_dir : str = "context/embeddings", use_late_chunking : bool = True):
+async def raw_text_corpus_to_embeddings(corpus_path : str = "context/raw_text", output_dir : str = "context/knowledge_base", use_late_chunking : bool = True):
     """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``."""
     
     # Load the embedding and tokenizer model
