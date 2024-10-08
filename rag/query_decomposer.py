@@ -1,20 +1,12 @@
 import transformers
 import torch
-from rag.transformer_model import TransformerModel
+from language_model import LanguageModel
 from model_prompts import Prompt
 
-class QueryDecomposer(TransformerModel):
+class QueryDecomposer(LanguageModel):
 
-    def __init__(self, model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct", causal = True, quantized = True):
-        super().__init__(model_name, causal, quantized)
-
-        self.pipeline = transformers.pipeline(
-            "text-generation",
-            model=self.model,
-            tokenizer=self.tokenizer,
-            torch_dtype=torch.float16,
-            device_map="auto",
-        )
+    def __init__():
+        return super().__init__()
     
     def decompose_question_step(self, input : str | list, max_tokens : int = 50):
         """
@@ -39,15 +31,7 @@ class QueryDecomposer(TransformerModel):
                 {'role':'user','content':f"Let's break down this complex question: {input}"}
             ]
 
-        chat_history = self.pipeline(
-            input,
-            do_sample=True,
-            top_k=10,
-            num_return_sequences=1,
-            eos_token_id=self.tokenizer.eos_token_id,
-            truncation = True,
-            max_new_tokens=50
-        )
+        chat_history = self.generate_response(input, max_new_tokens=50)
 
         assistant_response = chat_history[0]['generated_text'][-1]
         sub_question = assistant_response['content']

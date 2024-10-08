@@ -1,6 +1,5 @@
 #from typing import Union
 import torch
-import sys; sys.path.append("../")
 from transformer_model import TransformerModel
 
 class EmbeddingModel(TransformerModel):
@@ -12,7 +11,7 @@ class EmbeddingModel(TransformerModel):
         """
         Create embedding model. Source: [NoInstruct-small-Embedding-v0](https://huggingface.co/avsolatorio/NoInstruct-small-Embedding-v0).
         """
-        return super().__init__(model_name, causal, quantized)
+        return super().__init__(model_name, causal, quantized, use_gpu)
     
     def get_embedding(self, text: str | list[str], input_is_query = False):
         """
