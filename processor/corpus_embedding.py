@@ -6,8 +6,8 @@ from language_model import LanguageModel
 
 class CorpusEmbedding(LanguageModel):
 
-    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", quantized = False, use_gpu=True):
-        return super().__init__(model_name, quantized)
+    def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", causal = False, quantized = False, use_gpu=True):
+        return super().__init__(model_name, causal, quantized)
 
     def chunk_by_sentences(raw_text_corpus_path: str, tokenizer: callable):
         """
@@ -45,18 +45,21 @@ class CorpusEmbedding(LanguageModel):
         ]
         return chunks, span_annotations
 
-    def read_input_texts_from_folder(self, raw_text_corpus_path):
+    def read_input_texts_from_folder(raw_text_corpus_path, return_as_string):
         """
-        Read text content from all JSON files in a folder and concatenates it into a single string.
+        Read text content from all JSON files in a folder and returns it as an array where each element represents a JSON entry in each file.
+        Used to extract all Wikipedia articles from a raw text Wikipedia dump. Every entry of the array is a Wikipedia article.
         
         Args:
             raw_text_corpus_path (str): The path of the raw text corpus to read.
+            return_as_string (bool): If true, all text is returned concatenated into a single string using line breaks.
         
         Returns:
-            all_text (str): All text from the folder concatenated using line breaks.
+            all_text (list | str): All text from the folder either as an array for each article or concatenated.
         """
+        
+        text_list = []
 
-        all_text = ""
         for root, _, files in os.walk(raw_text_corpus_path):
             for file in files:
                 file_path = os.path.join(root, file)
@@ -67,10 +70,12 @@ class CorpusEmbedding(LanguageModel):
                             data = json.loads(line)
                             text_content = data.get('text', '').strip()  # Strip any leading/trailing whitespace
                             if text_content:  # Ensure only non-empty content is added
-                                all_text += text_content + "\n"
+                                text_list.append(text_content)
                         except json.JSONDecodeError:
                             continue  # Skip lines that are not valid JSON
-        return all_text
+        
+        if return_as_string: text_list = "\n".join(text_list)
+        return text_list
 
     def late_chunking(self, model_output: "BatchEncoding", span_annotation: list, max_length=None):
         """
@@ -121,7 +126,7 @@ class CorpusEmbedding(LanguageModel):
         """
 
         # Read the entire corpus as a single string.
-        input_text = self.read_input_texts_from_folder(raw_text_corpus_path)
+        input_text = self.read_input_texts_from_folder(raw_text_corpus_path, True)
 
         chunks, span_annotations = self.chunk_by_sentences(input_text, self.tokenizer)
 

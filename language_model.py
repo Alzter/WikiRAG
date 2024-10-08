@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
+from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from abc import ABC
 
 class LanguageModel(ABC):
@@ -9,7 +9,7 @@ class LanguageModel(ABC):
     Model name and quantization are configurable in the ``__init__`` method parameters.
     """
 
-    def __init__(self, model_name, quantized, use_gpu=True):
+    def __init__(self, model_name, causal, quantized, use_gpu=True):
         """
         Create the model and tokenizer needed.
         """
@@ -21,6 +21,9 @@ class LanguageModel(ABC):
             bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
         )
 
-        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
+        model_method = AutoModelForCausalLM if causal else AutoModel
+        
+        self.model = model_method.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
+        
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map='cuda', quantization_config = quantization_config)
     

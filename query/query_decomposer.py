@@ -4,8 +4,8 @@ from language_model import LanguageModel
 
 class QueryDecomposer(LanguageModel):
 
-    def __init__(self, model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct", quantized = True):
-        super().__init__(model_name, quantized)
+    def __init__(self, model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct", causal = True, quantized = True):
+        super().__init__(model_name, causal, quantized)
 
         self.pipeline = transformers.pipeline(
             "text-generation",
