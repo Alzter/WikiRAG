@@ -105,6 +105,12 @@ class CorpusEmbedding(EmbeddingModel):
             summary_file = open(summary_file_path, "wb")
             summary_file.write(summary.encode("utf-8"))
             summary_file.close()
+            
+            # Embed each summary using the embedding model
+            summary_embedding = self.get_embedding(summary, input_is_query=False)
+            summary_embedding_file_path = os.path.join(article_path, "summary.npy")
+
+            np.save(summary_embedding_file_path, summary_embedding, allow_pickle=True)
 
             # Treat each paragraph as a chunk
             for paragraph_id, paragraph in enumerate(paragraphs):
