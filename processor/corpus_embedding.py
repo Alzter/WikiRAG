@@ -4,25 +4,26 @@ import torch
 from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
 from language_model import LanguageModel
 
+import sys; sys.path.append("processor")
+
 class CorpusEmbedding(LanguageModel):
 
     def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", causal = False, quantized = False, use_gpu=True):
         return super().__init__(model_name, causal, quantized)
-
-    def chunk_by_sentences(raw_text_corpus_path: str, tokenizer: callable):
+    
+    def chunk_by_sentences(input_text: str, tokenizer: callable):
         """
         Split the input text into sentences using the tokenizer.
         
         Args:
-            raw_text_corpus_path (str): The path of the raw text corpus to split into sentences.
-            param tokenizer: The tokenizer to use.
+            input_text (str): The text snippet to split into sentences.
+            tokenizer (callable): The tokenizer to use.
         
         Returns:
             chunks (list): The list of text chunks.
             span_annotations (list): The location for each text chunk within the corpus.
         """
-
-        inputs = tokenizer(raw_text_corpus_path, return_tensors='pt', return_offsets_mapping=True)
+        inputs = tokenizer(input_text, return_tensors='pt', return_offsets_mapping=True)
         punctuation_mark_id = tokenizer.convert_tokens_to_ids('.')
         sep_id = tokenizer.convert_tokens_to_ids('[SEP]')
         token_offsets = inputs['offset_mapping'][0]
@@ -37,15 +38,25 @@ class CorpusEmbedding(LanguageModel):
             )
         ]
         chunks = [
-            raw_text_corpus_path[x[1] : y[1]]
+            input_text[x[1] : y[1]]
             for x, y in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)
         ]
+        
+        # print( f"chunk_position from 1: {chunk_positions[:-1]}\nFull chunk_pos: {chunk_positions}\n chunks: {chunks}")
+        # for x, y in zip([(1, 0)]+ chunk_positions[:-1], chunk_positions):
+        #     print(f"x0: {x[0]} - y0: {y[0]}") 
+        #     print(f"x1: {x[1]} - y1: {y[1]}") 
+        # print(f"test input_text {input_text[0:82]}")
+        # print(f" what print out {[input_text[x[0] : y[0]] for x, y in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)]}")
+        
         span_annotations = [
             (x[0], y[0]) for (x, y) in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)
         ]
+        
+        # print(f"chunks:{chunks}\nspan_annotations{span_annotations}")
         return chunks, span_annotations
 
-    def read_input_texts_from_folder(raw_text_corpus_path, return_as_string):
+    def read_input_texts_from_folder(self, raw_text_corpus_path, return_as_string):
         """
         Read text content from all JSON files in a folder and returns it as an array where each element represents a JSON entry in each file.
         Used to extract all Wikipedia articles from a raw text Wikipedia dump. Every entry of the array is a Wikipedia article.
@@ -77,7 +88,10 @@ class CorpusEmbedding(LanguageModel):
         if return_as_string: text_list = "\n".join(text_list)
         return text_list
 
-    def late_chunking(self, model_output: "BatchEncoding", span_annotation: list, max_length=None):
+    
+
+
+    def chunked_pooling(self, model_output: 'BatchEncoding', span_annotation: list, max_length=None):
         """
         Performs late chunking on a list of embeddings.
 
@@ -111,7 +125,7 @@ class CorpusEmbedding(LanguageModel):
             outputs.append(pooled_embeddings)
 
         return outputs
-
+    
     def corpus_to_embeddings(self, raw_text_corpus_path : str, output_dir : str, use_late_chunking = True):
         """
         Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``.
