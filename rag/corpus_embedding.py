@@ -71,15 +71,14 @@ class CorpusEmbedding(EmbeddingModel):
 
         return articles
     
-    def corpus_to_embeddings(self, raw_text_corpus_path : str, output_dir : str, use_late_chunking = True):
+    def corpus_to_embeddings(self, raw_text_corpus_path : str, output_dir : str):
         """
         Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``.
 
         Args:
             raw_text_corpus_path (str): The path of the raw text corpus to read.
             output_dir (str): The directory where the embeddings will be saved.
-            use_late_chunking (bool, optional): If true, performs text embedding *before* text chunking. This is a technique known as [late chunking](https://arxiv.org/abs/2409.04701), which significantly improves semantic meaning of embeddings.
-        
+            
         Returns:
             output_dir (str): The directory where the embeddings were saved.
         """
