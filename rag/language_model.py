@@ -19,13 +19,14 @@ class LLM(TransformerModel):
             device_map="auto",
         )
     
-    def generate_response(self, input : str | list, max_new_tokens = None):
+    def generate_response(self, input : str | list, max_new_tokens = None, truncation = True):
         """
         Generate a response to the user's query.
 
         Args:
             input (str/list): Can either be a direct input of data type ``str``, or a chat history of type ``list``.
             max_tokens (int, optional): The maximum number of tokens the LLM is allowed to generate for the response.
+            truncation (bool, optional): Whether to force the generated text to be of length max_new_tokens by cutting it off.
         
         Returns:
             chat_history (list): The entire chat history, including the user's prompt and the LLM's response.
@@ -37,6 +38,6 @@ class LLM(TransformerModel):
             top_k=10,
             num_return_sequences=1,
             eos_token_id=self.tokenizer.eos_token_id,
-            truncation = True,
+            truncation = truncation,
             max_new_tokens=max_new_tokens
         )
