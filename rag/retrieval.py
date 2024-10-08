@@ -6,8 +6,8 @@ from rank_bm25 import BM25Okapi
 import torch
 
 class Document():
-    def __init__(self, title : str, summary : str):
-        self.title = title; self.summary = summary
+    def __init__(self, title : str, summary : str, summary_embedding : torch.Tensor):
+        self.title = title; self.summary = summary; self.summary_embedding = summary_embedding
 
 class Embedding():
     def __init__(self, raw_text : str, embedding : torch.Tensor):
@@ -139,10 +139,13 @@ class Retrieval():
 
         # Get all summary files in the corpus.
         summary_files = glob.glob(f"{corpus_path}/*/summary.txt")
+        summary_embeddings = glob.glob(f"{corpus_path}/*/summary.npy")
 
         documents = []
+
+        assert(len(summary_files) == len(summary_embeddings), "Summary text files should directly map to summary embedding files.")
         
-        for summary_file in summary_files:
+        for summary_file, summary_embedding in zip(summary_files, summary_embeddings):
             
             # Get the parent directory of the summary file
             parent_directory = os.path.split(os.path.dirname(summary_file))[-1]
@@ -150,7 +153,10 @@ class Retrieval():
             with open(summary_file, "r") as f:
                 summary_text = f.read()
 
-            document = Document(title=parent_directory, summary=summary_text)
+            embedding_data = np.load(summary_embedding, encoding='bytes', allow_pickle=True)
+            embedding_data = torch.Tensor(embedding_data)
+
+            document = Document(title=parent_directory, summary=summary_text, summary_embedding=embedding_data)
 
             documents.append(document)
     
@@ -176,10 +182,7 @@ class Retrieval():
 
         for embedding_file, raw_text_file in zip(embedding_files, embedding_texts):
 
-            # The embedding data is loaded as a numpy array
             embedding_data = np.load(embedding_file, encoding='bytes', allow_pickle=True)
-
-            # Then converted into a Tensor again. Is this efficient? No! Too bad!
             embedding_data = torch.Tensor(embedding_data)
 
             with open(raw_text_file, "r") as f:
