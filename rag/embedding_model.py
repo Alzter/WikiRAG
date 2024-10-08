@@ -23,7 +23,7 @@ class EmbeddingModel(TransformerModel):
                                     The model is optimized to use the mean pooling for queries, while the sentence / document embedding uses the [CLS] representation.
         
         Returns:
-            vectors (list): The text embedding.
+            vectors (torch.Tensor): The text embedding. The embedding is of shape ``[1, 384]``.
         """
 
         self.model.eval() # Set model to evaluation mode.

@@ -1,9 +1,9 @@
 import transformers
 import torch
-from language_model import LanguageModel
+from language_model import LLM
 from model_prompts import Prompt
 
-class QueryDecomposer(LanguageModel):
+class QueryDecomposer(LLM):
 
     def __init__():
         return super().__init__()
@@ -31,7 +31,17 @@ class QueryDecomposer(LanguageModel):
                 {'role':'user','content':f"Let's break down this complex question: {input}"}
             ]
 
-        chat_history = self.generate_response(input, max_new_tokens=50)
+        chat_history = self.pipeline(
+            input,
+            do_sample=True,
+            top_k=10,
+            num_return_sequences=1,
+            eos_token_id=self.tokenizer.eos_token_id,
+            truncation = True,
+            max_new_tokens=50
+        )
+
+        self.generate_response(input, max_new_tokens=50)
 
         assistant_response = chat_history[0]['generated_text'][-1]
         sub_question = assistant_response['content']

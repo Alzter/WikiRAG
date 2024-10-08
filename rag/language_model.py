@@ -3,7 +3,7 @@ import torch
 from transformer_model import TransformerModel
 import transformers
 
-class LanguageModel(TransformerModel):
+class LLM(TransformerModel):
     """
     Class which can generate text using an LLM.
     """
