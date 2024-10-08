@@ -23,6 +23,8 @@ class LanguageModel(ABC):
             bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
         )
 
+        print(f"Loading embedding model and tokenizer from transformers: {model_name}\nPlease wait...\n")
+
         model_method = AutoModelForCausalLM if causal else AutoModel
         
         self.model = model_method.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config)

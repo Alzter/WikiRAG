@@ -9,52 +9,9 @@ from language_model import LanguageModel
 class CorpusEmbedding(LanguageModel):
 
     def __init__(self, model_name = "jinaai/jina-embeddings-v2-base-en", causal = False, quantized = False, use_gpu=True):
-        return super().__init__(model_name, causal, quantized)
+        return# super().__init__(model_name, causal, quantized)
     
-    def chunk_by_sentences(input_text: str, tokenizer: callable):
-        """
-        Split the input text into sentences using the tokenizer.
-        
-        Args:
-            input_text (str): The text snippet to split into sentences.
-            tokenizer (callable): The tokenizer to use.
-        
-        Returns:
-            chunks (list): The list of text chunks.
-            span_annotations (list): The location for each text chunk within the corpus.
-        """
-        inputs = tokenizer(input_text, return_tensors='pt', return_offsets_mapping=True)
-        punctuation_mark_id = tokenizer.convert_tokens_to_ids('.')
-        sep_id = tokenizer.convert_tokens_to_ids('[SEP]')
-        token_offsets = inputs['offset_mapping'][0]
-        token_ids = inputs['input_ids'][0]
-        chunk_positions = [
-            (i, int(start + 1))
-            for i, (token_id, (start, end)) in enumerate(zip(token_ids, token_offsets))
-            if token_id == punctuation_mark_id
-            and (
-                token_offsets[i + 1][0] - token_offsets[i][1] > 0
-                or token_ids[i + 1] == sep_id
-            )
-        ]
-        chunks = [
-            input_text[x[1] : y[1]]
-            for x, y in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)
-        ]
-        
-        # print( f"chunk_position from 1: {chunk_positions[:-1]}\nFull chunk_pos: {chunk_positions}\n chunks: {chunks}")
-        # for x, y in zip([(1, 0)]+ chunk_positions[:-1], chunk_positions):
-        #     print(f"x0: {x[0]} - y0: {y[0]}") 
-        #     print(f"x1: {x[1]} - y1: {y[1]}") 
-        # print(f"test input_text {input_text[0:82]}")
-        # print(f" what print out {[input_text[x[0] : y[0]] for x, y in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)]}")
-        
-        span_annotations = [
-            (x[0], y[0]) for (x, y) in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)
-        ]
-        
-        # print(f"chunks:{chunks}\nspan_annotations{span_annotations}")
-        return chunks, span_annotations
+        # Uncomment this line if you want to use the embedding / tokenizer model
 
     def read_input_texts_from_folder(self, raw_text_corpus_path, return_as_string):
         """
@@ -88,24 +45,98 @@ class CorpusEmbedding(LanguageModel):
         if return_as_string: text_list = "\n".join(text_list)
         return text_list
 
-    
+    def parse_wikipedia_corpus(self, corpus):
+        
+        articles = []
+        
+        for article in corpus:
+            paragraphs = article.split("\n\n")
+            try:
+                assert((len(paragraphs)>1), "Article must have more than 2 paragraphs.")
 
+                title = paragraphs[0] # Title
+                summary = paragraphs[1] # First paragraph of article = summary
+                body_paragraphs = paragraphs[1:] # All paragraphs excluding title
 
-    def chunked_pooling(self, model_output: 'BatchEncoding', span_annotation: list, max_length=None):
+                # Create data structure to represent Wikipedia article
+                articles.append({
+                    "title" : title.strip(),
+                    "summary" : summary,
+                    "paragraphs" : body_paragraphs
+                })
+
+            except Exception as e:
+                print(f"Error parsing Wikipedia article. Traceback: {str(e)}\nArticle text:\n{article}")
+
+        return articles
+
+            
+
+    def chunk_by_sentences(self, input_text: str):
+            """
+            Split the input text into sentences using the tokenizer.
+            
+            Args:
+                input_text (str): The text snippet to split into sentences.
+            
+            Returns:
+                chunks (list): The list of text chunks.
+                span_annotations (list): The location for each text chunk within the corpus.
+            """
+            inputs = self.tokenizer(input_text, return_tensors='pt', return_offsets_mapping=True)
+            punctuation_mark_id = self.tokenizer.convert_tokens_to_ids('.')
+            sep_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
+            token_offsets = inputs['offset_mapping'][0]
+            token_ids = inputs['input_ids'][0]
+            chunk_positions = [
+                (i, int(start + 1))
+                for i, (token_id, (start, end)) in enumerate(zip(token_ids, token_offsets))
+                if token_id == punctuation_mark_id
+                and (
+                    token_offsets[i + 1][0] - token_offsets[i][1] > 0
+                    or token_ids[i + 1] == sep_id
+                )
+            ]
+            chunks = [
+                input_text[x[1] : y[1]]
+                for x, y in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)
+            ]
+            
+            # print( f"chunk_position from 1: {chunk_positions[:-1]}\nFull chunk_pos: {chunk_positions}\n chunks: {chunks}")
+            # for x, y in zip([(1, 0)]+ chunk_positions[:-1], chunk_positions):
+            #     print(f"x0: {x[0]} - y0: {y[0]}") 
+            #     print(f"x1: {x[1]} - y1: {y[1]}") 
+            # print(f"test input_text {input_text[0:82]}")
+            # print(f" what print out {[input_text[x[0] : y[0]] for x, y in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)]}")
+            
+            span_annotations = [
+                (x[0], y[0]) for (x, y) in zip([(1, 0)] + chunk_positions[:-1], chunk_positions)
+            ]
+            
+            # print(f"chunks:{chunks}\nspan_annotations{span_annotations}")
+            return chunks, span_annotations
+
+    def late_chunking(self, input_text : str, max_length=None):
         """
-        Performs late chunking on a list of embeddings.
+        Performs late chunking on an input raw text by embedding it and then chunking.
 
         Args:
-            model_output (list): A list of embeddings to chunk.
+            input_text (str): The text to convert into chunks.
+            tokenizer (callable): The tokenizer to use.
             span_annotation (list): A list of chunk locations to use where each location is a tuple.
             max_length (int, optional): The maximum permitted length of chunks.
         
         Returns:
             outputs (list): The embeddings pooled into chunks.
         """
+
+        chunks, span_annotations = self.chunk_by_sentences(input_text)
+        inputs = self.tokenizer(input_text, return_tensors='pt').to(self.device)
+        model_output = self.model(**inputs)
+
         token_embeddings = model_output[0]
         outputs = []
-        for embeddings, annotations in zip(token_embeddings, span_annotation):
+        for embeddings, annotations in zip(token_embeddings, span_annotations):
             if (
                 max_length is not None
             ):  # remove annotations which go bejond the max-length of the model
@@ -139,25 +170,48 @@ class CorpusEmbedding(LanguageModel):
             output_dir (str): The directory where the embeddings were saved.
         """
 
-        # Read the entire corpus as a single string.
-        input_text = self.read_input_texts_from_folder(raw_text_corpus_path, True)
+        wikipedia = self.read_input_texts_from_folder(raw_text_corpus_path, False)
+        articles = self.parse_wikipedia_corpus(wikipedia)
 
-        chunks, span_annotations = self.chunk_by_sentences(input_text, self.tokenizer)
+        if not os.path.exists(output_dir): os.makedirs(output_dir)
 
-        # Print the combined extracted text (for debugging purposes)
-        # if input_text.strip():
-        #     print(f"Extracted Text: {input_text[:1000]}...")  # Print first 1000 characters to check
-        # else:
-        #     print("No text extracted")
+        for article in articles:
+            title = article['title']
+            summary = article['summary']
+            paragraphs = article['paragraphs']
 
-        if use_late_chunking:
-            inputs = self.tokenizer(input_text, return_tensors='pt').to(self.device)
-            model_output = self.model(**inputs)
-            embeddings = self.late_chunking(model_output, [span_annotations])[0]
-        else:
-            embeddings = self.model.encode(chunks)
-        
-        print(f"Embedding successful. Saving to path: {output_dir}")
-        np.save(output_dir, embeddings, allow_pickle=True)
+            article_path = os.path.join(output_dir, title.strip())
+            print(article_path)
+
+            if not os.path.exists(article_path): os.mkdir(article_path)
+
+            summary_file_path = os.path.join(article_path, "summary.txt")
+
+            # Write the summary file.
+            summary_file = open(summary_file_path, "wb")
+            summary_file.write(summary.encode("utf-8"))
+            summary_file.close()
+
+            # Treat each paragraph as a chunk
+            for paragraph_id, paragraph in enumerate(paragraphs):
+
+                embedding_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.txt")
+
+                print(f"Embed paragraph {paragraph_id} for article {title}")
+
+                print(embedding_file_path)
+
+                embedding_file = open(embedding_file_path, "wb")
+                embedding_file.write(paragraph.encode("utf-8"))
+                embedding_file.close()
+
+                # if use_late_chunking:
+                #     embeddings = self.late_chunking(input_text)
+                # else:
+                #     chunks, span_annotations = self.chunk_by_sentences(input_text)
+                #     embeddings = self.model.encode(chunks)
+            
+        #print(f"Embedding successful. Saving to path: {output_dir}")
+        #np.save(output_dir, embeddings, allow_pickle=True)
 
         return output_dir
