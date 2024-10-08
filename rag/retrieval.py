@@ -155,14 +155,22 @@ class Retrieval():
             documents.append(document)
     
         return documents
-
+    
     def get_document_embeddings(self, document_name) -> list[Embedding]:
-        document_embedding_path = os.path.join(self.corpus_path, document_name.strip())
+        """
+        If document_name == None, load *all* embeddings.
+        """
 
         embeddings = []
 
-        embedding_files = glob.glob(document_embedding_path + "//chunk_*.npy")
-        embedding_texts = glob.glob(document_embedding_path + "//chunk_*.txt")
+        if document_name == None:
+            embedding_files = glob.glob(self.corpus_path + "//*//chunk_*.npy")
+            embedding_texts = glob.glob(self.corpus_path + "//*//chunk_*.txt")
+        else:
+            document_embedding_path = os.path.join(self.corpus_path, document_name.strip())
+
+            embedding_files = glob.glob(document_embedding_path + "//chunk_*.npy")
+            embedding_texts = glob.glob(document_embedding_path + "//chunk_*.txt")
         
         assert(len(embedding_files) == len(embedding_texts), "Embedding raw text files should directly map to embedding data files.")
 
@@ -183,22 +191,33 @@ class Retrieval():
         
         return embeddings
     
-    def get_context(self, query : str, num_contexts = 10) -> list[str]:
-        
-        print("Finding best article to use as context with sparse retrieval:")
+    def get_context(self, query : str, num_contexts = 10, use_sparse_retrieval = True) -> list[str]:
 
-        # Use BM25 (sparse retrieval) to acquire one Wikipedia article
-        # which has the most n-gram lexical matches to the user query.
-        best_document = SparseRetrieval.get_k_best_documents(1, query, self.documents)[0]
+        if not use_sparse_retrieval:
 
-        print(f"Using Wikipedia article: {best_document.title} for context")
+            # Load all embeddings into memory (this takes a long time)
+            if not hasattr(self, "all_embeddings"):
 
-        # Retrieve all chunk embeddings from said document
-        embeddings = self.get_document_embeddings(best_document.title)
-        
-        print(f"Found {len(embeddings)} chunks within article.")
+                print("Loading all document chunk embeddings into memory...")
+                self.all_embeddings = self.get_document_embeddings(None)
 
-        print("Embedding user query for dense retrieval:")
+            embeddings = self.all_embeddings
+            
+        else:
+            print("Finding best article to use as context with sparse retrieval:")
+
+            # Use BM25 (sparse retrieval) to acquire one Wikipedia article
+            # which has the most n-gram lexical matches to the user query.
+            best_document = SparseRetrieval.get_k_best_documents(1, query, self.documents)[0]
+
+            print(f"Using Wikipedia article: {best_document.title} for context")
+
+            # Retrieve all chunk embeddings from said document
+            embeddings = self.get_document_embeddings(best_document.title)
+            
+            print(f"Found {len(embeddings)} chunks within article.")
+
+            print("Embedding user query for dense retrieval:")
 
         # Convert query into an embedding
         query_embedding = self.embedding_model.get_embedding(query, input_is_query=True)
