@@ -2,9 +2,9 @@ import numpy as np
 import json, os
 import torch
 from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
-from language_model import LanguageModel
 
 import sys; sys.path.append("processor")
+from language_model import LanguageModel
 
 class CorpusEmbedding(LanguageModel):
 

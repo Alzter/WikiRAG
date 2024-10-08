@@ -20,6 +20,18 @@ async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/
         "dump_save_path" : save_path
     }
 
+@app.get("/extract_raw_text_from_wikipedia/")
+async def extract_raw_text_from_wikipedia_dump(dump_file_path : str, output_dir : str = "context/wikipedia", is_subset:bool = False):
+    """
+    Extract raw text from a Wikipedia dump using WikiExtractor and save it to ``output_dir``.
+    """
+
+    save_path = WikipediaDownload.extract_wikipedia_dump(dump_file_path, output_dir=output_dir, is_subset=is_subset)
+
+    return {
+        "extracted_save_path" : save_path
+    }
+
 @app.get("/raw_text_corpus_to_embeddings/")
 async def raw_text_corpus_to_embeddings(corpus_path : str = "context/wikipedia", output_dir : str = "context/embeddings", embedding_model : str = "jinaai/jina-embeddings-v2-base-en", use_model_quantization : bool = False, use_late_chunking : bool = True):
     """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``."""
