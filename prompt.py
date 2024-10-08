@@ -66,32 +66,16 @@ class Prompt:
         2nd Answer:Seoul High School is located in South Korea.
     - Final Output: That's enough.
 
-    - Complex Question:Who is the maternal grandfather of Antiochus X Eusebes?
-    - Progress of Decomposition:
-        1st Simple Question: Who is the mother of Antiochus X Eusebes?
-        1st Answer:the mother of Antiochus X Eusebes is Cleopatra IV.
-        2nd Simple Question:who is the father of Cleopatra IV?
-        2nd Answer:the father of Cleopatra IV is Ptolemy VIII Physcon.
-    - Final Output: That's enough.
-
-    - Complex Question:Where was the place of death of Anastasia Of Serbia's husband?
-    - Progress of Decomposition:
-        1st Simple Question: Who is the husband of Anastasia Of Serbia?
-        1st Answer:the husband of Anastasia Of Serbia is Stefan Nemanja.
-        2nd Simple Question:Where was the place of death of Stefan Nemanja?
-        2nd Answer:the place of death of Stefan Nemanja is Holy Monastery Hilandar, Moni Chilandariou, Greece.
-    - Final Output: That's enough.
-
-    - Complex Question:Which film has the director died earlier, Condemned Women or Faces In The Dark?
+    - Complex Question: Which film's director died earlier, Condemned Women or Faces In The Dark?
     - Progress of Decomposition:
         1st Simple Question: What is the director of the film Condemned Women?
-        1st Answer:the director of the film Condemned Women is Lew Landers.
+        1st Answer: The director of the film Condemned Women is Lew Landers.
         2nd Simple Question:What is the director of the film Faces In The Dark?
-        2nd Answer:the director of the film Faces In The Dark is David Eady.
-        3st Simple Question: When did Lew Landers die?
-        3st Answer:Lew Landers die on 16 December 1962.
-        4st Simple Question: When did David Eady die?
-        4st Answer:David Eady die on April 5, 2009.
+        2nd Answer: The director of the film Faces In The Dark is David Eady.
+        3rd Simple Question: When did Lew Landers die?
+        3rd Answer: Lew Landers died on 16 December 1962.
+        4th Simple Question: When did David Eady die?
+        4th Answer: David Eady died on April 5, 2009.
     - Final Output: That's enough.
 
     ## Initialization
