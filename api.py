@@ -9,7 +9,7 @@ from rag.corpus_embedding import CorpusEmbedding
 app = FastAPI()
 
 @app.get("/download_wikipedia_dump/")
-async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/wikipedia", download_subset:bool = False):
+async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/raw_text", download_subset:bool = False):
     """
     Download a Wikipedia dump, convert it to raw text, and save it to ``output_dir``.
     """
@@ -33,7 +33,7 @@ async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/
 #     }
 
 @app.get("/raw_text_corpus_to_embeddings/")
-async def raw_text_corpus_to_embeddings(corpus_path : str = "context/wikipedia", output_dir : str = "context/embeddings", use_late_chunking : bool = True):
+async def raw_text_corpus_to_embeddings(corpus_path : str = "context/raw_text", output_dir : str = "context/knowledge_base", use_late_chunking : bool = True):
     """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``."""
     
     # Load the embedding and tokenizer model
