@@ -33,7 +33,7 @@ async def extract_raw_text_from_wikipedia_dump(dump_file_path : str, output_dir 
     }
 
 @app.get("/raw_text_corpus_to_embeddings/")
-async def raw_text_corpus_to_embeddings(corpus_path : str = "context/wikipedia", output_dir : str = "context/embeddings", embedding_model : str = "jinaai/jina-embeddings-v2-base-en", use_model_quantization : bool = False, use_late_chunking : bool = False):
+async def raw_text_corpus_to_embeddings(corpus_path : str = "context/wikipedia", output_dir : str = "context/embeddings", embedding_model : str = "jinaai/jina-embeddings-v2-base-en", use_model_quantization : bool = False, use_late_chunking : bool = True):
     """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``."""
     
     # Load the embedding and tokenizer model

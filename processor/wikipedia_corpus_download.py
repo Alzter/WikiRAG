@@ -1,6 +1,6 @@
 import requests
 import os, subprocess, json
-import sys; sys.path.append("processor")
+import sys; sys.path.append("wiki_extractor"); sys.path.append("processor")
 from wiki_extractor import WikiExtractor
 
 class WikipediaDownload():
