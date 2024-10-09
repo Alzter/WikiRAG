@@ -71,9 +71,9 @@ class CorpusEmbedding(EmbeddingModel):
 
         return articles
     
-    def corpus_to_embeddings(self, raw_text_corpus_path : str, output_dir : str):
+    def embed_wikipedia_raw_text(self, raw_text_corpus_path : str, output_dir : str):
         """
-        Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``.
+        Converts a raw text Wikipedia knowledge corpus into a RAG knowledge base and stores it in ``output_dir``.
 
         Args:
             raw_text_corpus_path (str): The path of the raw text corpus to read.
