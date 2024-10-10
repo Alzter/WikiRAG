@@ -6,6 +6,8 @@ from model_prompts import Prompt
 class QueryDecomposer(LLM):
 
     def __init__(self):
+        self.qd_prompt = Prompt.cot_prompt
+
         super().__init__()
     
     def decompose_question_step(self, input : str | list, max_tokens : int = 50):
@@ -27,7 +29,7 @@ class QueryDecomposer(LLM):
 
         if isinstance(input, str):
             input = [
-                {'role':'system','content':Prompt.cot_prompt}, # Question Decomposition Specialist Prompt
+                {'role':'system','content': self.qd_prompt}, # Question Decomposition Specialist Prompt
                 {'role':'user','content':f"Let's break down this complex question: {input}"}
             ]
 

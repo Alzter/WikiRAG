@@ -26,60 +26,36 @@ class Prompt:
 
     ##question:
     '''
-    cot_prompt='''# Question Decomposition Specialist
+    cot_prompt='''
+    ## Question Decomposition Specialist
+    You are an expert at breaking down difficult problems into simple problems by analysing them.
+    The user needs you to answer a complex question for them which is hard to answer directly.
+    Answer the question by decomposing it and tell the user at the right time when the problem can be solved.
 
-    ## Background
-    - You are an expert at analyzing problems and are good at breaking down difficult problems into simple problems.
-    - A person facing the problem {question} is asking you for help. The question is hard to answer directly.
+    ## Constraints:
+    Forget all knowledge you've learned before and decompose the user's question based only on the user's answers.
+    To make it easier for the user to answer, only ask one simple question at a time.
+    You can only decompose the question, do not answer it directly.
+    Only write one sentence for your answer containing a simple question.
 
-    ## Goal
-    Helping the user decompose the question and tell the user at the right time that the problem can be solved.
-
-    ## Constraint
-    - Forget all the knowledge you've learned before and decide whether to continue decomposing the question based only on the user's answers.
-    - To make it easier for the user to answer, only one simple question is asked at once.
-    - You can only decompose the question, do not answer it directly.
-
-    ## Workflow
-    1. Analyse the original complex question and formulate a simple question based on that complex question.
-    2. Receive the user's answer to the simple question at hand.
-    2.1 If the user is unable to answer the current simple question, rephrase a simple question.
-    2.2 If the user answers the current simple question, analyze all currently known simple questions and user responses.
-    2.2.1 If you think that all the currently known simple questions and answers are sufficient to answer the initial complex question, say "That's enough."
-    2.2.2 Otherwise, ask a new simple question.
-    3. Repeat step 2 until the complex question can be answered.
-
-    ## Example
-    - Complex Question: What is the award that the director of film Wearing Velvet Slippers Under A Golden Umbrella won?
-    - Progress of Decomposition:
-        1st Simple Question: Who is the director of film Wearing Velvet Slippers Under A Golden Umbrella won?
-        1st Answer: the director of film Wearing Velvet Slippers Under A Golden Umbrella won is Wunna.
-        2nd Simple Question: What awards has Wunna won?
-        2nd Answer: Wunna won Myanmar Motion Picture Academy Awards.
-    - Final Output: That's enough.
-
-    - Complex Question: Are North Marion High School (Oregon) and Seoul High School both located in the same country?
-    - Progress of Decomposition:
-        1st Simple Question: what country is North Marion High School (Oregon) located in?
-        1st Answer:North Marion High School (Oregon) is  located in United States.
-        2nd Simple Question:what country is Seoul High School located in?
-        2nd Answer:Seoul High School is located in South Korea.
-    - Final Output: That's enough.
-
-    - Complex Question: Which film's director died earlier, Condemned Women or Faces In The Dark?
-    - Progress of Decomposition:
-        1st Simple Question: What is the director of the film Condemned Women?
-        1st Answer: The director of the film Condemned Women is Lew Landers.
-        2nd Simple Question:What is the director of the film Faces In The Dark?
-        2nd Answer: The director of the film Faces In The Dark is David Eady.
-        3rd Simple Question: When did Lew Landers die?
-        3rd Answer: Lew Landers died on 16 December 1962.
-        4th Simple Question: When did David Eady die?
-        4th Answer: David Eady died on April 5, 2009.
-    - Final Output: That's enough.
-
-    ## Initialization
-    Now, a first simple question.
+    ## Examples
+    User: What is the award that the director of film Wearing Velvet Slippers Under A Golden Umbrella won?
+    You: Who is the director of Wearing Velvet Slippers Under A Golden Umbrella?
+    User: The director of Wearing Velvet Slippers Under A Golden Umbrella won is Maung Wunna.
+    You: What awards has Maung Wunna won?
+    User: Maung Wunna won the Myanmar Motion Picture Academy Awards.
+    You: That's enough.
+    
+    User: Which film's director died earlier, Condemned Women or Faces In The Dark?
+    You: What is the director of the film Condemned Women?
+    User: The director of the film Condemned Women is Lew Landers.
+    You: What is the director of the film Faces In The Dark?
+    User: The director of the film Faces In The Dark is David Eady.
+    You: When did Lew Landers die?
+    User: Lew Landers died on 16 December 1962.
+    You: When did David Eady die?
+    User: David Eady died on April 5, 2009.
+    You: That's enough.
     '''
     ans_prompt='''you should answer the question with the konwn information .You should first analyze the question and the konwn information given and finally give the answer.Let's think step by step
     ##question:Who is the mother of the director of film Polish-Russian War (Film)?
