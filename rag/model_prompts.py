@@ -3,15 +3,31 @@
 # Authors: Xiaoming Zhang, Ming Wang, Xiaocui Yang, Daling Wang, Shi Feng, Yifei Zhang
 
 class Prompt:
-    direct_prompt='''You need to answer the question with the some information.if you don't know the answer, you can say"I don't know". Examples are as follows:
-    ##question:what is the director of film Polish-Russian War (Film)?
-    ##output:the director of film Polish-Russian War (Film) is Xawery \u017bu\u0142awski
-    ##question:what is the director of film  Dune: Part Two
-    ##output:I don't know
+    get_answer_from_context ='''
+    You need to answer a question given some background information.
+    Answer the question only if the answer is present in the background information.
 
+    ## Contraints:
+    Forget all knowledge you've learned before and only answer the question using the information provided.
+    If the background information doesn't contain the answer, say "I don't know".
+    Only write one sentence for your answer.
+    
+    ## Examples:
+    User: Who is the director of film Polish-Russian War (Film)?
+    User: Polish-Russian War is a 2009 Polish film directed by Xawery Żuławski based on the novel Polish-Russian War under the white-red flag by Dorota Masłowska.
+    You: The director of film Polish-Russian War (Film) is Xawery Żuławski.
 
-    ##question:'''
-    find_prompt='''I need you to extract the subject from the question, and I'll tell you the question and ask you to return the subject. Your response should contain only the answer and nothing else.Examples are as follows:
+    User: When did Apollo 11 land on the moon?
+    User: Apollo 11 was a spaceflight conducted by the United States from July 16 to July 24, 1969. It marked the first time in history that humans landed on the Moon. Commander Neil Armstrong and Lunar Module Pilot Buzz Aldrin landed the Apollo Lunar Module Eagle on July 20, 1969, at 20:17 UTC, and Armstrong became the first person to step onto the Moon's surface six hours and 39 minutes later, on July 21 at 02:56 UTC.
+    You: Apollo 11 landed on the moon on July 20, 1969, at 20:17 UTC.
+
+    User: What was Shayan Chowdhury Arnob's first musical album?
+    User: Arthur Fiedler and the Boston Pops Orchestra recorded the work for RCA Victor, including one of the first stereo recordings of the music.
+    You: I don't know.
+    '''
+    
+    find_prompt='''
+    I need you to extract the subject from the question, and I'll tell you the question and ask you to return the subject. Your response should contain only the answer and nothing else.Examples are as follows:
     ##question:Who is the director of Jaws？
     ##output:Jaws
 
@@ -26,8 +42,9 @@ class Prompt:
 
     ##question:
     '''
-    cot_prompt='''
-    ## Question Decomposition Specialist
+
+    query_decomposer='''
+    ## Question Decomposition Specialist:
     You are an expert at breaking down difficult problems into simple problems by analysing them.
     The user needs you to answer a complex question for them which is hard to answer directly.
     Answer the question by decomposing it and tell the user at the right time when the problem can be solved.
@@ -38,10 +55,10 @@ class Prompt:
     You can only decompose the question, do not answer it directly.
     Only write one sentence for your answer containing a simple question.
 
-    ## Examples
+    ## Examples:
     User: What is the award that the director of film Wearing Velvet Slippers Under A Golden Umbrella won?
     You: Who is the director of Wearing Velvet Slippers Under A Golden Umbrella?
-    User: The director of Wearing Velvet Slippers Under A Golden Umbrella won is Maung Wunna.
+    User: The director of Wearing Velvet Slippers Under A Golden Umbrella is Maung Wunna.
     You: What awards has Maung Wunna won?
     User: Maung Wunna won the Myanmar Motion Picture Academy Awards.
     You: That's enough.
