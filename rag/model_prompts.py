@@ -49,23 +49,6 @@ class Prompt:
     User: Work on the ASCII standard began in May 1961.
     You: The question is asking for the difference between the year of Abraham Lincoln's birth and the year of invention of ASCII. The context shows that Abrahan Lincoln was born in the year 1809, whilst the ASCII standard began in 1961. 1961 - 1809 = 152, therefore 152 years elapsed between Abraham Lincoln's birth and the creation of the ASCII standard.
     '''
-    
-    find_prompt='''
-    I need you to extract the subject from the question, and I'll tell you the question and ask you to return the subject. Your response should contain only the answer and nothing else.Examples are as follows:
-    Question: Who is the director of Jaws？
-    You: Jaws
-
-    Question: Where is Steven Spielberg from?
-    You: Steven Spielberg
-
-    Question: what is the date of death of Elio Petri?
-    You: Elio Petri
-
-    Question: what is the date of death of Franco Rossi (director)?
-    You: Franco Rossi (director)
-
-    Question: 
-    '''
 
     is_decomposition_needed='''
     ## Answer Deduction Specialist.

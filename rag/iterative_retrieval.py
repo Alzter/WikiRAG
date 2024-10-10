@@ -198,11 +198,11 @@ class IterativeRetrieval:
             chat_history, sub_question = self.qd.decompose_question_step(chat_history)
             hops += 1
 
-            # if verbose: print("Evaluating whether contexts are sufficient to answer original query...")
-            # can_answer = self.is_answer_attainable(query, contexts)
-            # if can_answer:
-            #     if verbose: print("Model is confident that it can answer the original question")
-            #     break
+            if verbose: print("Evaluating whether contexts are sufficient to answer original query...")
+            can_answer = self.is_answer_attainable(query, contexts)
+            if can_answer:
+                if verbose: print("Model is confident that it can answer the original question")
+                break
         
         # If we were not able to find enough context to answer the multi-hop question, answer "I don't know".
         if hops == maximum_reasoning_steps:
