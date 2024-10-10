@@ -49,7 +49,7 @@ class IterativeRetrieval:
         answer_attempts = 0
         visited_articles = []
 
-        while answer is None or answer_attempts < max_attempts:
+        while answer is None and answer_attempts < max_attempts:
             print(f"Attempt {answer_attempts + 1} to answer question")
 
             # Retrieve context for the user's query from a Wikipedia article.
@@ -76,9 +76,11 @@ class IterativeRetrieval:
 
         return answer
 
-    def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 10):
+    def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 10, max_sub_question_answer_attempts : int = 5):
         """
         Answer a multi-hop question using iterative retrieval.
+        This process involves the RAG model decomposing the original question into a sub-question,
+        Then 
 
         Args:
             query (str): The user's query.
@@ -86,7 +88,9 @@ class IterativeRetrieval:
                 How many steps of iterative reasoning (AKA 'hops') the model may make to answer the query.
 
                 E.g., 2 maximum reasoning steps means the model can solve 2-hop questions.
-            
+            max_sub_question_answer_attempts (int):
+                How many attempts the model may make at answering each sub-question using retrieved contexts.
+                If the model fails to answer any sub-question, the model will end the retrieval process and answer "I don't know".
 
         Returns:
             chat_history (list): The chain-of-thought process the model employed to acquire the answer.
@@ -99,11 +103,14 @@ class IterativeRetrieval:
         hops = 0
         
         while self.evaluate_similarity(sub_question, "That's enough.") < 0.9 and hops < maximum_reasoning_steps:
-
             # Answer the first sub-question using by retrieving context from the knowleddge base.
-            sub_answer = self.answer_single_hop_question(sub_question, max_attempts=10)
+            sub_answer = self.answer_single_hop_question(sub_question, max_attempts=max_sub_question_answer_attempts)
             
-            if sub_answer == "I don't know.": return chat_history, "I don't know."
+            # If we could not find appropriate context to answer a sub-question,
+            # end the retrieval process and answer "I don't know".
+            if sub_answer == "I don't know.":
+                chat_history.append({"role":"assistant", "content":"I don't know."})
+                return chat_history, "I don't know."
 
             # Add the sub-answer to the chat history.
             chat_history.append({'role': 'user', 'content': sub_answer})
@@ -111,8 +118,11 @@ class IterativeRetrieval:
             # Extract further sub-questions, or "That's enough" if context is sufficient
             chat_history, sub_question = self.qd.decompose_question_step(chat_history)
             hops += 1
-
-        if hops == maximum_reasoning_steps: return chat_history, "I don't know."
+        
+        # If we were not able to find enough context to answer the multi-hop question, answer "I don't know".
+        if hops == maximum_reasoning_steps:
+            chat_history.append({"role":"assistant", "content":"I don't know."})
+            return chat_history, "I don't know."
 
         # TODO: Make model generate final answer using contexts.
 
