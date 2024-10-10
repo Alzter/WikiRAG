@@ -1,5 +1,6 @@
 from query_decomposer import QueryDecomposer
 from retrieval import Retrieval, DenseRetrieval
+from model_prompts import Prompt
 
 class IterativeRetrieval:
 
@@ -92,6 +93,49 @@ class IterativeRetrieval:
 
         return answer
 
+    def is_answer_attainable(self, query : str, contexts : list[str]) -> tuple[bool, list[dict]]:
+        """
+        Given a multi-hop query and a list of contexts, assess whether the query is answerable given the contexts.
+
+        Args:
+            query (str): The user's multi-hop query.
+            contexts (list[str]): A list of retrieved answers for the question.
+        
+        Returns:
+            question_is_answerable (bool): Whether the question can be answered given the contexts.
+            chat_history (list): The model's response / reasoning process.
+        """
+
+        context_inputs = [{'role':'user','content':f'Context: {context}'} for context in contexts]
+
+        chat_history = [
+            {'role':'system','content':Prompt.is_decomposition_needed},
+            {'role':'user','content':f'Question: {query}'},
+            *context_inputs,
+            {'role':'assistant','content':"Are follow-up questions needed here: "}
+        ]
+
+        chat_history, answer = self.qd.generate_response(chat_history, max_new_tokens = 10)
+
+        # Extract only the first word from the answer
+        answer = answer.split(" ")[0]
+
+        confidence = self.evaluate_similarity(answer, "Yes")
+
+        question_is_answerable = False if confidence > 0.95 else True
+
+        return question_is_answerable, chat_history
+    
+    def answer_multi_hop_question_with_context(self, query : str, contexts : list[str]):
+        """
+        Answer a multi-hop question after successful context retrieval for the question.
+        """
+
+        # TODO: Augment the prompt to explicitly instruct the LLM to provide their reasoning in steps. This is proven to yield better results.
+        answer = self.qd.answer_question_using_context(query, " ".join(contexts))
+
+        return answer
+
     def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
         """
         Answer a multi-hop question using iterative retrieval.
@@ -148,11 +192,17 @@ class IterativeRetrieval:
             # Add the sub-answer to the chat history.
             chat_history.append({'role': 'user', 'content': sub_answer})
 
-            if verbose: print(f"Decomposing question: {sub_question}")
+            if verbose: print(f"Decomposing question again...")
 
             # Extract further sub-questions, or "That's enough" if context is sufficient
             chat_history, sub_question = self.qd.decompose_question_step(chat_history)
             hops += 1
+
+            # if verbose: print("Evaluating whether contexts are sufficient to answer original query...")
+            # can_answer = self.is_answer_attainable(query, contexts)
+            # if can_answer:
+            #     if verbose: print("Model is confident that it can answer the original question")
+            #     break
         
         # If we were not able to find enough context to answer the multi-hop question, answer "I don't know".
         if hops == maximum_reasoning_steps:

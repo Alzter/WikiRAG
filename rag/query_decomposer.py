@@ -35,20 +35,25 @@ class QueryDecomposer(LLM):
 
         return chat_history, sub_question
     
-    def answer_question_using_context(self, query : str, context : str, max_tokens = 50):
+    def answer_question_using_context(self, query : str, context : str, use_chain_of_thought : bool = False, max_tokens = 50):
         """
             Given a question and some context, extract the answer to the question from the context if the answer is provided in the context, otherwise return "I don't know".
         
             Args:
                 query (str): The question to answer.
                 context (str): Some background information, typically a paragraph from a Wikipedia article.
+                use_chain_of_thought (bool): Whether to get the LLM to explain their reasoning process as they generate the answer.
+                    It is recommended to set this to true when generating a final response for the LLM to acquire a better answer.
                 max_tokens (int): The maximum number of words allowed for the answer.
 
             Returns:
                 extracted_answer(str): The answer to the query using the context, or "I don't know.".
         """
+
+        prompt = Prompt.cot_answer_with_context if use_chain_of_thought else Prompt.answer_extraction_from_context
+
         input = [
-            {'role':'system', 'content':Prompt.answer_extraction_from_context},
+            {'role':'system', 'content':prompt},
             {'role':'user','content':query},
             {'role':'user','content':context}
         ]
