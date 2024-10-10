@@ -92,7 +92,7 @@ class IterativeRetrieval:
 
         return answer
 
-    def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 10, max_sub_question_answer_attempts : int = 5, verbose : bool = True):
+    def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
         """
         Answer a multi-hop question using iterative retrieval.
         This process involves the RAG model decomposing the original question into a sub-question,
@@ -107,6 +107,12 @@ class IterativeRetrieval:
             max_sub_question_answer_attempts (int):
                 How many attempts the model may make at answering each sub-question using retrieved contexts.
                 If the model fails to answer any sub-question, the model will end the retrieval process and answer "I don't know".
+            num_chunks (int, optional):
+                How many paragraphs to retrieve from each Wikipedia article to use as context.
+                
+                More context chunks result in higher answer accuracy, but greater answer latency.
+
+                Defaults to 1.
             verbose (bool, optional): If true, prints the answering process to the console.
 
         Returns:
@@ -115,22 +121,34 @@ class IterativeRetrieval:
         """
 
         # Extract first sub-question, or "That's enough" if context is sufficient
+        if verbose: print(f"Decomposing question: {query}")
         chat_history, sub_question = self.qd.decompose_question_step(query)
 
         hops = 0
+
+        contexts = []
         
         while self.evaluate_similarity(sub_question, "That's enough.") < 0.9 and hops < maximum_reasoning_steps:
+            if verbose: print(f"Extracted sub-question: {sub_question}")
+            if verbose: print("Attempting to answer sub-question...")
+
             # Answer the first sub-question using by retrieving context from the knowleddge base.
-            sub_answer = self.answer_single_hop_question(sub_question, max_attempts=max_sub_question_answer_attempts)
+            sub_answer = self.answer_single_hop_question(sub_question, max_attempts=max_sub_question_answer_attempts, num_chunks=num_chunks)
             
             # If we could not find appropriate context to answer a sub-question,
             # end the retrieval process and answer "I don't know".
             if sub_answer == "I don't know.":
                 chat_history.append({"role":"assistant", "content":"I don't know."})
                 return chat_history, "I don't know."
+            
+            contexts.append(sub_answer)
+
+            if verbose: print(f"Extracted answer to sub-question: {sub_answer}")
 
             # Add the sub-answer to the chat history.
             chat_history.append({'role': 'user', 'content': sub_answer})
+
+            if verbose: print(f"Decomposing question: {sub_question}")
 
             # Extract further sub-questions, or "That's enough" if context is sufficient
             chat_history, sub_question = self.qd.decompose_question_step(chat_history)
@@ -140,6 +158,8 @@ class IterativeRetrieval:
         if hops == maximum_reasoning_steps:
             chat_history.append({"role":"assistant", "content":"I don't know."})
             return chat_history, "I don't know."
+
+        if verbose: print(f"Retrieved enough context to answer original question: {query}\nContext:\n{str(contexts)}")
 
         # TODO: Make model generate final answer using contexts.
 
