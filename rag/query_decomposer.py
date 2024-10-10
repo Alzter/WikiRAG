@@ -5,8 +5,8 @@ from model_prompts import Prompt
 
 class QueryDecomposer(LLM):
 
-    def __init__():
-        return super().__init__()
+    def __init__(self):
+        super().__init__()
     
     def decompose_question_step(self, input : str | list, max_tokens : int = 50):
         """
