@@ -53,7 +53,7 @@ class QueryDecomposer(LLM):
             {'role':'user','content':context}
         ]
 
-        chat_history, extracted_answer = self.generate_response(input, max_new_tokens=max_tokens, truncation=True)
+        _, extracted_answer = self.generate_response(input, max_new_tokens=max_tokens, truncation=True)
 
         return extracted_answer
 

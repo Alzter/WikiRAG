@@ -44,9 +44,10 @@ class LLM(TransformerModel):
         )
 
         try:
-            assistant_response = chat_history[0]['generated_text'][-1]['content']
+            chat_history = chat_history[0]['generated_text']
+            assistant_response = chat_history[-1]['content']
         except Exception as e:
             print(f"Error retrieving assistant response for LLM generation.\nChat history: {str(chat_history)}\nTraceback:\n{str(e)}")
             assistant_response = None
-            
+
         return chat_history, assistant_response
