@@ -126,6 +126,13 @@ class DenseRetrieval():
 class Retrieval():
     
     def __init__(self, corpus_path : str):
+
+        if not os.path.exists(corpus_path):
+            raise FileNotFoundError(f"Corpus path not found: {corpus_path}")
+        
+        if len(glob.glob(corpus_path + "/*/summary.txt")) == 0:
+            raise LookupError(f"No documents found in corpus. Corpus path: {corpus_path}")
+
         self.documents = self.get_document_summaries(corpus_path)
         self.corpus_path = corpus_path
         self.embedding_model = EmbeddingModel()

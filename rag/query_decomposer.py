@@ -6,7 +6,7 @@ from model_prompts import Prompt
 class QueryDecomposer(LLM):
 
     def __init__(self):
-        self.qd_prompt = Prompt.cot_prompt
+        self.qd_prompt = Prompt.query_decomposer
 
         super().__init__()
     
