@@ -3,7 +3,7 @@
 # Authors: Xiaoming Zhang, Ming Wang, Xiaocui Yang, Daling Wang, Shi Feng, Yifei Zhang
 
 class Prompt:
-    get_answer_from_context ='''
+    answer_extraction_from_context ='''
     You need to answer a question given some background information.
     Answer the question only if the answer is present in the background information.
 

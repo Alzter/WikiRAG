@@ -30,9 +30,10 @@ class LLM(TransformerModel):
         
         Returns:
             chat_history (list): The entire chat history, including the user's prompt and the LLM's response.
+            assistant_response (str): The LLM's response to the input.
         """
 
-        return self.pipeline(
+        chat_history = self.pipeline(
             input,
             do_sample=True,
             top_k=10,
@@ -41,3 +42,11 @@ class LLM(TransformerModel):
             truncation = truncation,
             max_new_tokens=max_new_tokens
         )
+
+        try:
+            assistant_response = chat_history[0]['generated_text'][-1]['content']
+        except Exception as e:
+            print(f"Error retrieving assistant response for LLM generation.\nChat history: {str(chat_history)}\nTraceback:\n{str(e)}")
+            assistant_response = None
+            
+        return chat_history, assistant_response
