@@ -299,6 +299,10 @@ class Retrieval():
         if verbose: print(f"Found {len(embeddings)} chunks for within context.")
         if verbose: print("Finding best article chunks to use as context with dense retrieval:")
 
+        # Do not attempt to retrieve more contexts than we have
+        num_contexts = min(num_contexts, len(embeddings))
+        num_contexts = max(num_contexts, 0)
+
         best_embeddings = DenseRetrieval.get_k_best_documents(num_contexts, query_embedding, embeddings)
 
         if verbose: print("Context successfully retrieved.")

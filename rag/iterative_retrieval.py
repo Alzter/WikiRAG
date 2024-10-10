@@ -34,14 +34,26 @@ class IterativeRetrieval:
         # Answer confidence is the inverse of this score
         return 1 - uncertainty_score
 
-    def answer_single_hop_question(self, query : str, max_attempts : int = 5, verbose : bool = True) -> str:
+    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 5, use_sparse_retrieval : bool = False, verbose : bool = True) -> str:
         """
         Answer a single-hop question by retrieving context from Wikipedia.
 
         Args:
             query (str): The single-hop question to answer.
+            num_chunks (int, optional):
+                How many paragraphs to retrieve from each Wikipedia article to use as context.
+                
+                More context chunks result in higher answer accuracy, but greater answer latency.
+
+                Defaults to 1.
             max_attempts (int, optional): The number of tries the retrieval network has to successfully find the context for the question.
-        
+            use_sparse_retrieval (bool, optional):
+                Controls whether to use dense or sparse retrieval to find the best Wikipedia article to answer the user's query.
+
+                If True, uses a BM25 search of article raw text summaries to find the Wikipedia article.
+
+                If False, uses cosine similarity search of article summary embeddings to find the Wikipedia article.
+            verbose (bool, optional): If true, prints the answering process to the console.
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not retrieve the correct context.
         """
@@ -50,10 +62,14 @@ class IterativeRetrieval:
         visited_articles = []
 
         while answer is None and answer_attempts < max_attempts:
-            print(f"Attempt {answer_attempts + 1} to answer question")
+            if verbose: print(f"Attempt {answer_attempts + 1} to answer question")
 
             # Retrieve context for the user's query from a Wikipedia article.
-            context, article = self.retriever.get_context(query, num_contexts=1, ignored_articles = visited_articles)
+            context, article = self.retriever.get_context(query, num_contexts=num_chunks, ignored_articles = visited_articles, use_sparse_retrieval = use_sparse_retrieval)
+
+            # If we retrieve more than one paragraph for context,
+            # concatenate the paragraphs together with line breaks.
+            if num_chunks > 1: context = "\n\n".join(context)
 
             visited_articles.append(article)
 
@@ -76,7 +92,7 @@ class IterativeRetrieval:
 
         return answer
 
-    def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 10, max_sub_question_answer_attempts : int = 5):
+    def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 10, max_sub_question_answer_attempts : int = 5, verbose : bool = True):
         """
         Answer a multi-hop question using iterative retrieval.
         This process involves the RAG model decomposing the original question into a sub-question,
@@ -91,6 +107,7 @@ class IterativeRetrieval:
             max_sub_question_answer_attempts (int):
                 How many attempts the model may make at answering each sub-question using retrieved contexts.
                 If the model fails to answer any sub-question, the model will end the retrieval process and answer "I don't know".
+            verbose (bool, optional): If true, prints the answering process to the console.
 
         Returns:
             chat_history (list): The chain-of-thought process the model employed to acquire the answer.
