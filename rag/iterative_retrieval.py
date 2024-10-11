@@ -46,7 +46,7 @@ class IterativeRetrieval:
 
         return response
 
-    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 5, use_sparse_retrieval : bool = False, verbose : bool = True) -> str:
+    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 5, use_sparse_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
         """
         Answer a single-hop question by retrieving context from Wikipedia.
 
@@ -65,6 +65,8 @@ class IterativeRetrieval:
                 If True, uses a BM25 search of article raw text summaries to find the Wikipedia article.
 
                 If False, uses cosine similarity search of article summary embeddings to find the Wikipedia article.
+            use_chain_of_thought (bool): Whether to get the LLM to explain their reasoning process as they generate the answer.
+                Only set this to True when getting the LLM to generate a final answer for the user's query.
             verbose (bool, optional): If true, prints the answering process to the console.
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not retrieve the correct context.
@@ -89,7 +91,7 @@ class IterativeRetrieval:
             if verbose: print(f"Attempting to answer question using context: {context}")
 
             # Attempt to answer the question using the retrieved context.
-            answer = self.qd.answer_question_using_context(query, context)
+            answer = self.qd.answer_question_using_context(query, context, use_chain_of_thought=use_chain_of_thought)
             
             # Evaluate how confident the model is in their answer from 1 to 0.
             answer_confidence = self.evaluate_answer_confidence(answer)
@@ -122,7 +124,7 @@ class IterativeRetrieval:
         chat_history = [
             {'role':'system','content':Prompt.is_decomposition_needed},
             {'role':'user','content':f'Question: {query}'},
-            *context_inputs,
+            *context_inputs if contexts,
             {'role':'assistant','content':"Are follow-up questions needed here: "}
         ]
 
@@ -174,6 +176,17 @@ class IterativeRetrieval:
             chat_history (list): The chain-of-thought process the model employed to acquire the answer.
             answer (str): The answer to the question, or "I don't know" if the model could not answer.
         """
+        
+        # Attempt to first answer the question as a single-hop question.
+        if verbose: print("Attempting to answer the question directly:")
+        attempt_answer = self.answer_single_hop_question(query, num_chunks=3, max_attempts=1, use_sparse_retrieval=False, use_chain_of_thought=False)
+        attempt_answer_confidence = self.evaluate_answer_confidence(attempt_answer)
+
+        if attempt_answer_confidence > 0.1:
+            chat_history += {"role":"assistant", "content":attempt_answer}
+            return chat_history, attempt_answer
+        
+        # If the assistant cannot answer the question satisfactorily as a single-hop question, try decomposing the question.
 
         # Extract first sub-question, or "That's enough" if context is sufficient
         if verbose: print(f"Decomposing question: {query}")
