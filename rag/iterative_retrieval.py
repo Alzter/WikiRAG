@@ -39,7 +39,7 @@ class IterativeRetrieval:
         chat_history = [
             {'role':"system",'content':Prompt.count_number_of_hops},
             {'role':'user','content':query},
-            {'role':'assistant','content':"Step 1: "}
+            {'role':'assistant','content':"Fact 1: "}
         ]
 
         chat_history, response = self.qd.generate_response(chat_history, max_new_tokens=200)

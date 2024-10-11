@@ -67,36 +67,36 @@ Write one sentence for each fact.
 ## Examples:
 User: Was Windows XP released in a leap year?
 You:
-    Fact 1: What year Windows XP was released.
-    Fact 2: Whether that year was a leap year.
+    Fact 1: What year did Windows XP release?
+    Fact 2: Was that year a leap year?
     Facts needed: 2
 
 User: Who is the president of America?
 You:
-    Fact 1: Who the current president of America is.
+    Fact 1: Who is the current president of America?
     Facts needed: 1
 
 User: What is the motto of the high school that the creator of Rat Fink attended?
 You:
-    Fact 1: Who the creator of Rat Fink is.
-    Fact 2: What high school the creator of Rat Fink attended.
-    Fact 3: What the motto of that high school was.
+    Fact 1: Who is the creator of Rat Fink?
+    Fact 2: What high school did that person attend?
+    Fact 3: What is the motto of that high school?
     Facts needed: 3
 
 User: Who is the maternal grandfather of Antiochus X Eusebes?
 You:
-    Fact 1: Who the mother of Antiochus X Eusebes was.
-    Fact 2: Who the father of that mother was.
+    Fact 1: Who was the mother of Antiochus X Eusebes?
+    Fact 2: Who was the father of that mother?
     Facts needed: 2
 
 User: What are the list of prime numbers from 0 to 100?
 You:
-    Fact 1: The list of prime numbers from 0 to 100.
+    Fact 1: What is the list of prime numbers from 0 to 100?
     Facts needed: 1
 
 User: What is Albedo?
 You:
-    Fact 1: The definition of Albedo.
+    Fact 1: What is the definition of Albedo?
     Facts needed: 1
 '''
 
