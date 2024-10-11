@@ -35,7 +35,7 @@ class QueryDecomposer(LLM):
 
         return chat_history, sub_question
     
-    def answer_question_using_context(self, query : str, context : str, use_chain_of_thought : bool = False, max_tokens = 50):
+    def answer_question_using_context(self, query : str, context : str, use_chain_of_thought : bool = False, max_tokens = 50) -> tuple[str, list[dict]]:
         """
             Given a question and some context, extract the answer to the question from the context if the answer is provided in the context, otherwise return "I don't know".
         
@@ -48,6 +48,7 @@ class QueryDecomposer(LLM):
 
             Returns:
                 extracted_answer(str): The answer to the query using the context, or "I don't know.".
+                chat_history (list[dict]): The LLM's internal reasoning process to acquire the answer. Useful for debugging.
         """
 
         prompt = Prompt.cot_answer_with_context if use_chain_of_thought else Prompt.answer_extraction_from_context
@@ -58,9 +59,9 @@ class QueryDecomposer(LLM):
             {'role':'user','content':context}
         ]
 
-        _, extracted_answer = self.generate_response(input, max_new_tokens=max_tokens, truncation=True)
+        chat_history, extracted_answer = self.generate_response(input, max_new_tokens=max_tokens, truncation=True)
 
-        return extracted_answer
+        return extracted_answer, chat_history
 
 
 

@@ -1,6 +1,7 @@
 from query_decomposer import QueryDecomposer
 from retrieval import Retrieval, DenseRetrieval
 from model_prompts import Prompt
+import re
 
 class IterativeRetrieval:
 
@@ -24,11 +25,26 @@ class IterativeRetrieval:
             self.retriever.embedding_model.get_embedding(sentence_b)
         )
 
-    def evaluate_answer_confidence(self, response : str):
+    def evaluate_answer_confidence(self, response : str) -> float:
         """
         Evaluate how confident the model's answer for the question is
         from a scale of 1 (confident) to 0 (not confident).
+
+        Args:
+            response (str): The LLM's response to any given question.
+
+        Returns:
+            answer_confidence (float): The model's confidence that they know the answer from 1 to 0.
+                                        Any value under 0.1 should be treated as the model not knowing.
         """
+
+        # Sanitise the response by removing non-alphanumeric characters excluding spaces and converting it to lowercase.
+        response_sanitised = re.sub(r'[^a-zA-Z0-9|\s]', '', response).lower().strip()
+
+        # Score an immediate fail if the model said "I don't know" at any point
+        # NOTE: This may be a bad idea, because there may be answers which need to say "I don't know" for legitimate reasons, such as for quoting somebody.
+        if "i dont know" in response_sanitised: return 0
+
         # Score how closely the embedding of the model's response aligns with "I don't know".
         uncertainty_score = self.evaluate_similarity(response, "I don't know.")
 
@@ -95,7 +111,7 @@ class IterativeRetrieval:
             if verbose: print(f"Attempting to answer question using context: {context}")
 
             # Attempt to answer the question using the retrieved context.
-            answer = self.qd.answer_question_using_context(query, context, use_chain_of_thought=use_chain_of_thought)
+            answer, _ = self.qd.answer_question_using_context(query, context, use_chain_of_thought=use_chain_of_thought)
             
             # Evaluate how confident the model is in their answer from 1 to 0.
             answer_confidence = self.evaluate_answer_confidence(answer)
@@ -143,15 +159,49 @@ class IterativeRetrieval:
 
         return question_is_answerable, chat_history
     
-    def answer_multi_hop_question_with_context(self, query : str, contexts : list[str]):
+    def answer_multi_hop_question_using_context(self, query : str, contexts : list[str], verbose : bool = False):
         """
-        Answer a multi-hop question after successful context retrieval for the question.
+        Answer a given multi-hop question after context has already been provided for it.
+        
+        Args:
+            query (str): The original multi-hop question.
+            contexts (list[str]): A list of retrieved contexts for the question.
+        
+        Returns:
+            final_answer (str): A concise answer to the original question,
+                                or "I don't know" if the contexts do not answer the original question.
+            chat_history (str): The LLM's internal process of answering the question.
         """
 
-        # TODO: Augment the prompt to explicitly instruct the LLM to provide their reasoning in steps. This is proven to yield better results.
-        answer = self.qd.answer_question_using_context(query, " ".join(contexts))
+        if verbose: print("Getting LLM to acquire answer using CoT...")
+        # Use Chain-Of-Thought to assist the LLM with getting the answer by getting them to think out loud.
+        # Getting the LLM to explain their answer at every stage of reasoning yields more accurate answers.
+        answer_with_reasoning, reasoning_history = self.qd.answer_question_using_context(query, contexts, use_chain_of_thought=True, max_tokens=300)
 
-        return answer
+        answer_confidence = self.evaluate_answer_confidence(answer_with_reasoning)
+
+        if verbose: print(f"Generated verbose answer:\n{answer_with_reasoning}")
+
+        if answer_confidence < 0.1:
+            return "I don't know.", reasoning_history
+
+        # Now that we have the answer, we need to simplify it down into a single sentence,
+        # because the user does not need the LLM's reasoning chain.
+
+        if verbose: print("Simplifying answer...")
+        # LLM prompt to simplify answer to a single sentence.
+        simplification_history = [
+            {"role":"system","content":Prompt.simplify_answer},
+            {"role":"user","content":f"Input: {answer_with_reasoning}"},
+            {"role":"user","content":f"Question: {query}"}
+        ]
+
+        if verbose: print(f"Generated concise answer: {answer_concise}")
+        simplification_history, answer_concise = self.qd.generate_response(simplification_history, max_new_tokens=100)
+
+        chat_history = reasoning_history.copy().append(simplification_history)
+
+        return answer_concise, chat_history
 
     def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
         """
@@ -177,8 +227,8 @@ class IterativeRetrieval:
             verbose (bool, optional): If true, prints the answering process to the console.
 
         Returns:
-            chat_history (list): The chain-of-thought process the model employed to acquire the answer.
             answer (str): The answer to the question, or "I don't know" if the model could not answer.
+            reasoning (list): The LLM's reasoning process history which was used to acquire the final answer.
         """
         
         # Attempt to first answer the question as a single-hop question.
@@ -188,7 +238,7 @@ class IterativeRetrieval:
 
         if attempt_answer_confidence > 0.1:
             chat_history += {"role":"assistant", "content":attempt_answer}
-            return chat_history, attempt_answer
+            return attempt_answer, chat_history
         
         # If the assistant cannot answer the question satisfactorily as a single-hop question, try decomposing the question.
 
@@ -211,7 +261,7 @@ class IterativeRetrieval:
             # end the retrieval process and answer "I don't know".
             if sub_answer == "I don't know.":
                 chat_history.append({"role":"assistant", "content":"I don't know."})
-                return chat_history, "I don't know."
+                return "I don't know.", chat_history
             
             contexts.append(sub_answer)
 
@@ -235,11 +285,13 @@ class IterativeRetrieval:
         # If we were not able to find enough context to answer the multi-hop question, answer "I don't know".
         if hops == maximum_reasoning_steps:
             chat_history.append({"role":"assistant", "content":"I don't know."})
-            return chat_history, "I don't know."
+            return "I don't know.", chat_history
 
         if verbose: print(f"Retrieved enough context to answer original question: {query}\nContext:\n{str(contexts)}")
 
-        # TODO: Make model generate final answer using contexts.
+        final_answer, final_answer_retrieval_process = self.answer_multi_hop_question_using_context(query, contexts, verbose = verbose)
 
-        return chat_history, "TODO: Get final answer"
+        chat_history.append(final_answer_retrieval_process)
+
+        return final_answer, chat_history
 

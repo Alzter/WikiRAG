@@ -158,6 +158,26 @@ You:
     User: David Eady died on April 5, 2009.
     You: That's enough.
     '''
+
+    # Prompt to convert a long answer into a sentence.
+    simplify_answer='''Based on the input and the question, you have to tell me the answer. Answers should be concise and contain only the corresponding keywords.
+    Input: The director of the film "Polish-Russian War (Wojna polsko-ruska)" is Xawery Żuławski
+    Question: what is the director of film Polish-Russian War (Film)?
+    You: Xawery Żuławski
+
+    Input: The mother of the director Xawery Żuławski is Małgorzata Braunek
+    Question: Who is the mother of Xawery Żuławski?
+    You: Małgorzata Braunek
+
+    Input: Venice's country is Italy while Los Angeles's country is the United States
+    Question: Are Venice and Los Angeles in the same country?
+    You: No
+
+    Input: Venice's country is Italy while Los Angeles's country is the United States
+    Question: Are Venice and Los Angeles in the same country?
+    You: No
+    '''
+
     ans_prompt='''you should answer the question with the konwn information .You should first analyze the question and the konwn information given and finally give the answer.Let's think step by step
     Question: Who is the mother of the director of film Polish-Russian War (Film)?
     ##konwn information:The director of Polish-Russian War is Xawery Żuławski., Xawery Žuławski's mother is Małgorzata Braunek.
@@ -187,58 +207,7 @@ You:
     response:Jagna Žuławski
     output:yes
     '''
-    exact_prompt='''Based on the input , you have to find the answer,which usually on the behind of the "Answer:"
-    input:1. Analyzing the Question:
-    - The question seeks to identify the director of the film "Polish-Russian War (Wojna polsko-ruska)."
-    - The known information provided is that the film was directed by Xawery Żuławski.
-    - Additionally, it's mentioned that the film is based on the novel "Polish-Russian War under the white-red flag" by Dorota Masłowska.
 
-    2. Known Information:
-    - The director of the film is Xawery Żuławski.
-    - The film is based on the novel by Dorota Masłowska.
-
-    3. Answer:
-    - The director of the film "Polish-Russian War (Wojna polsko-ruska)" is Xawery Żuławski.
-    output: The director of the film "Polish-Russian War (Wojna polsko-ruska)" is Xawery Żuławski.
-    input: 1: Analyze the Question
-    The question asks which film, "Blind Shaft" or "The Mask Of Fu Manchu," was released first.
-
-    Step 2: Analyze the Known Information
-    We know that "Blind Shaft" was released in 2003, and "The Mask Of Fu Manchu" was released in 1932.
-
-    Step 3: Answer the Question
-    Based on the known information, "The Mask Of Fu Manchu" came out first, in 1932, while "Blind Shaft" was released in 2003.
-    output: Based on the known information, "The Mask Of Fu Manchu" came out first, in 1932, while "Blind Shaft" was released in 2003.
-
-    '''
-    exact_prompt2='''Based on the input and the question, you have to tell me the answer.Answers should be concise and contain only the corresponding keywords
-    Input: The director of the film "Polish-Russian War (Wojna polsko-ruska)" is Xawery Żuławski
-    Question: what is the director of film Polish-Russian War (Film)?
-    You: Xawery Żuławski
-
-    Input: The director of Xawery Żuławski is Małgorzata Braunek
-    Question: Who is the mother of Xawery Żuławski?
-    You: Małgorzata Braunek
-
-    Input: '''
-    exact_prompt3='''Based on the input and the question, you have to tell me the answer.Answers should be concise and contain only the corresponding keywords
-    Input: The director of the film "Polish-Russian War (Wojna polsko-ruska)" is Xawery Żuławski
-    Question: what is the director of film Polish-Russian War (Film)?
-    You: Xawery Żuławski
-
-    Input: The director of Xawery Żuławski is Małgorzata Braunek
-    Question: Who is the mother of Xawery Żuławski?
-    You: Małgorzata Braunek
-
-    Input: Venice's country is Italy while Los Angeles's country is the United States
-    Question: Are Venice and Los Angeles in the same country?
-    You: No
-
-    Input: Venice's country is Italy while Los Angeles's country is the United States
-    Question: Are Venice and Los Angeles in the same country?
-    You: No
-
-    Input: '''
     ret_prompt='''you should answer the question with the konwn information .You should first analyze the question and the konwn information given and finally give the answer.Let's think step by step!
     Question: Who is the director of film Polish-Russian War (Film)?
     ##konwn information:Polish-Russian War (Wojna polsko-ruska) is a 2009 Polish film directed by Xawery Żuławski based on the novel Polish-Russian War under the white-red flag by Dorota Masłowska.
@@ -271,8 +240,6 @@ You:
 
     3. Answer the Question:
     - The mother of Xawery Żuławski is Małgorzata Braunek.
-
-
     '''
 
     revise_prompt=''' you are given a question ,some information and a subquestion. the subquestion may have some fault,you need to correct it .Examples are as follows:
