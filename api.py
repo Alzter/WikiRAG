@@ -9,12 +9,12 @@ from rag.corpus_embedding import CorpusEmbedding
 app = FastAPI()
 
 @app.get("/download_wikipedia_dump/")
-async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/raw_text", download_subset:bool = False):
+async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/raw_text", subfile_max_size_megabytes : int = 10, megabyte_limit:int|None = None):
     """
     Download a Wikipedia dump, convert it to raw text, and save it to ``output_dir``.
     """
 
-    save_path = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=output_dir, dump_url=dump_url, download_subset=download_subset)
+    save_path = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=output_dir, subfile_max_megabytes = subfile_max_size_megabytes, max_megabytes=megabyte_limit, dump_url=dump_url)
 
     return {
         "dump_save_path" : save_path

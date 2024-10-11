@@ -113,52 +113,46 @@ class CorpusEmbedding(EmbeddingModel):
 
         for article in articles:
 
-            try:
+            title = article['title']
+            summary = article['summary']
+            paragraphs = article['paragraphs']
+
+            folder_name = self.sanitise_string(title.strip())
+
+            article_path = os.path.join(output_dir, folder_name)
+            print(f"Embedding article: {article_path}")
+
+            if not os.path.exists(article_path): os.mkdir(article_path)
+
+            summary_file_path = os.path.join(article_path, "summary.txt")
+
+            # Write the summary file.
+            summary_file = open(summary_file_path, "wb")
+            summary_file.write(summary.encode("utf-8"))
+            summary_file.close()
             
-                title = article['title']
-                summary = article['summary']
-                paragraphs = article['paragraphs']
+            # Embed each summary using the embedding model
+            summary_embedding = self.get_embedding(summary, input_is_query=False)
+            summary_embedding_file_path = os.path.join(article_path, "summary.npy")
 
-                folder_name = self.sanitise_string(title.strip())
+            np.save(summary_embedding_file_path, summary_embedding, allow_pickle=True)
 
-                article_path = os.path.join(output_dir, folder_name)
-                print(f"Embedding article: {article_path}")
-
-                if not os.path.exists(article_path): os.mkdir(article_path)
-
-                summary_file_path = os.path.join(article_path, "summary.txt")
-
-                # Write the summary file.
-                summary_file = open(summary_file_path, "wb")
-                summary_file.write(summary.encode("utf-8"))
-                summary_file.close()
+            # Treat each paragraph as a chunk
+            for paragraph_id, paragraph in enumerate(paragraphs):
                 
-                # Embed each summary using the embedding model
-                summary_embedding = self.get_embedding(summary, input_is_query=False)
-                summary_embedding_file_path = os.path.join(article_path, "summary.npy")
+                # Embed each paragraph using the embedding model
+                embedding = self.get_embedding(paragraph, input_is_query=False)
 
-                np.save(summary_embedding_file_path, summary_embedding, allow_pickle=True)
+                # Save the raw text of the paragraph into a text file
+                paragraph_raw_text_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.txt")
+                paragraph_raw_text_file = open(paragraph_raw_text_file_path, "wb")
+                paragraph_raw_text_file.write(paragraph.encode("utf-8"))
+                paragraph_raw_text_file.close()
 
-                # Treat each paragraph as a chunk
-                for paragraph_id, paragraph in enumerate(paragraphs):
-                    
-                    # Embed each paragraph using the embedding model
-                    embedding = self.get_embedding(paragraph, input_is_query=False)
+                # Save the embedding of the paragraph into a numpy file
+                embedding_data_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.npy")
+                np.save(embedding_data_file_path, embedding, allow_pickle=True)
 
-                    # Save the raw text of the paragraph into a text file
-                    paragraph_raw_text_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.txt")
-                    paragraph_raw_text_file = open(paragraph_raw_text_file_path, "wb")
-                    paragraph_raw_text_file.write(paragraph.encode("utf-8"))
-                    paragraph_raw_text_file.close()
-
-                    # Save the embedding of the paragraph into a numpy file
-                    embedding_data_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.npy")
-                    np.save(embedding_data_file_path, embedding, allow_pickle=True)
-
-                    print(f"Embed paragraph {paragraph_id} for article {title}")
-                
-            except Exception as e:
-
-                print(f"Error parsing Wikipedia article. Traceback: {str(e)}")
+                print(f"Embed paragraph {paragraph_id} for article {title}")
 
         return output_dir
