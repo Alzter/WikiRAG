@@ -3,6 +3,8 @@
 # Authors: Xiaoming Zhang, Ming Wang, Xiaocui Yang, Daling Wang, Shi Feng, Yifei Zhang
 
 class Prompt:
+    # Prompt which answers a single-hop question using one sentence.
+    # Used in query decomposition to extract the answer to a given question from retrieved contexts.
     answer_extraction_from_context ='''
     You need to answer a question given some background information.
     Answer the question only if the answer is present in the background information.
@@ -26,6 +28,8 @@ class Prompt:
     You: I don't know.
     '''
 
+    # Prompt which answers a single-hop question using Chain-of-Thought to explain every step of reasoning.
+    # Used to answer a multi-hop question given all the retrieved contexts.
     cot_answer_with_context ='''
     You need to answer a question given some background information.
     Answer the question only if the answer is present in the background information.
@@ -50,6 +54,49 @@ class Prompt:
     You: The question is asking for the difference between the year of Abraham Lincoln's birth and the year of invention of ASCII. The context shows that Abrahan Lincoln was born in the year 1809, whilst the ASCII standard began in 1961. 1961 - 1809 = 152, therefore 152 years elapsed between Abraham Lincoln's birth and the creation of the ASCII standard.
     '''
 
+    # Prompt which detects if a given question is multi-hop or single-hop.
+    count_number_of_hops='''
+The user needs you to answer a question for them.
+They may ask you a simple question which can be answered with one fact, or a complex question which requires many facts to answer.
+You must count how many facts the user's question needs to be answered successfully.
+
+## Contraints:
+Do not directly answer the user's question, only identify all facts the answer needs.
+Write one sentence for each fact.
+
+## Examples:
+User: Was Windows XP released in a leap year?
+You:
+    Fact 1: What year Windows XP was released.
+    Fact 2: Whether that year was a leap year.
+    Facts needed: 2
+
+User: Who is the president of America?
+You:
+    Fact 1: Who the current president of America is.
+    Facts needed: 1
+
+User: What is the motto of the high school that the creator of Rat Fink attended?
+You:
+    Fact 1: Who the creator of Rat Fink is.
+    Fact 2: What year the creator of Rat Fink attended high school.
+    Fact 3: What high school the creator of Rat Fink attended.
+    Fact 4: What the motto of that high school was during that year.
+    Facts needed: 4
+
+User: Who is the maternal grandfather of Antiochus X Eusebes?
+You:
+    Fact 1: Who the mother of Antiochus X Eusebes was.
+    Fact 2: Who the father of that mother was.
+    Facts needed: 2
+
+User: What are the list of prime numbers from 0 to 100?
+You:
+    Fact 1: The list of prime numbers from 0 to 100.
+    Facts needed: 1
+'''
+
+    # Prompt which detects if retrieved context is sufficient to answer a multi-hop question.
     is_decomposition_needed='''
     ## Answer Deduction Specialist.
     You are an expert at telling whether a question needs follow-up questions to answer or not.
@@ -86,6 +133,7 @@ class Prompt:
     Are follow up questions needed here: No.
     '''
 
+    # Prompt which extracts a sub-question from a multi-hop question.
     query_decomposer='''
     ## Question Decomposition Specialist:
     You are an expert at breaking down difficult problems into simple problems by analysing them.
