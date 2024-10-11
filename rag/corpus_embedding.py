@@ -163,6 +163,6 @@ class CorpusEmbedding(EmbeddingModel):
                 embedding_data_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.npy")
                 np.save(embedding_data_file_path, embedding, allow_pickle=True)
 
-                print(f"Embed paragraph {paragraph_id} for article {title}")
+                # print(f"Embed paragraph {paragraph_id} for article {title}")
 
         return output_dir
