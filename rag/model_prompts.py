@@ -79,10 +79,9 @@ You:
 User: What is the motto of the high school that the creator of Rat Fink attended?
 You:
     Fact 1: Who the creator of Rat Fink is.
-    Fact 2: What year the creator of Rat Fink attended high school.
-    Fact 3: What high school the creator of Rat Fink attended.
-    Fact 4: What the motto of that high school was during that year.
-    Facts needed: 4
+    Fact 2: What high school the creator of Rat Fink attended.
+    Fact 3: What the motto of that high school was.
+    Facts needed: 3
 
 User: Who is the maternal grandfather of Antiochus X Eusebes?
 You:
@@ -93,6 +92,11 @@ You:
 User: What are the list of prime numbers from 0 to 100?
 You:
     Fact 1: The list of prime numbers from 0 to 100.
+    Facts needed: 1
+
+User: What is Albedo?
+You:
+    Fact 1: The definition of Albedo.
     Facts needed: 1
 '''
 
