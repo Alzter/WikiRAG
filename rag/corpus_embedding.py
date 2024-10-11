@@ -59,7 +59,7 @@ class CorpusEmbedding(EmbeddingModel):
                             if not text_content: continue
 
                             text_subset = text_content[:50]
-                            article_is_disamiguation_page = "may refer to" in text_subset
+                            article_is_disamiguation_page = "may refer to" in text_subset or "may also refer to" in text_subset
                             
                             # Ignore articles which are disambiguation pages.
                             if article_is_disamiguation_page: continue
