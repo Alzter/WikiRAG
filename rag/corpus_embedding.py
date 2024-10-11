@@ -14,27 +14,19 @@ class CorpusEmbedding(EmbeddingModel):
     Class which can convert a raw-text corpus of Wikipedia into an embedding database.
     """
 
-    def __init__(self):
-        return super().__init__()
+    def __init__(self, fast : bool = False):
+        """
+        Args:
+            fast (bool): If True, quantizes the embedding model. This leads to faster embedding time, but worse embeddings.
+        """
+        return super().__init__(quantized=fast)
     
-    def sanitise_string(input_string : str, allow_unicode=False):
+    def sanitise_string(self, input_string : str):
             """
             Sanitises a string to make it usable as a folder name
-            by removing illegal characters such as apostrophes.
-
-            Taken from https://github.com/django/django/blob/master/django/utils/text.py
-            Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
-            dashes to single dashes. Remove characters that aren't alphanumerics,
-            underscores, or hyphens. Convert to lowercase. Also strip leading and
-            trailing whitespace, dashes, and underscores.
+            by removing all non alphanumeric and whitespace characters.
             """
-            value = str(value)
-            if allow_unicode:
-                value = unicodedata.normalize('NFKC', value)
-            else:
-                value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
-            value = re.sub(r'[^\w\s-]', '', value.lower())
-            return re.sub(r'[-\s]+', '-', value).strip('-_')
+            return re.sub(r'[^a-zA-Z0-9|\s]', '', input_string).strip()
 
     def read_input_texts_from_folder(self, raw_text_corpus_path, return_as_string):
         """
@@ -50,6 +42,7 @@ class CorpusEmbedding(EmbeddingModel):
         """
         
         text_list = []
+        title_list = []
 
         for root, _, files in os.walk(raw_text_corpus_path):
             for file in files:
@@ -57,11 +50,22 @@ class CorpusEmbedding(EmbeddingModel):
                 with open(file_path, 'r', encoding='utf-8') as f:
                     for line in f:
                         try:
+                            
                             # Parse each line as JSON and extract the 'text' field
                             data = json.loads(line)
                             text_content = data.get('text', '').strip()  # Strip any leading/trailing whitespace
-                            if text_content:  # Ensure only non-empty content is added
-                                text_list.append(text_content)
+                            
+                            # Only add articles with text in them.
+                            if not text_content: continue
+
+                            text_subset = text_content[:50]
+                            article_is_disamiguation_page = "may refer to" in text_subset
+                            
+                            # Ignore articles which are disambiguation pages.
+                            if article_is_disamiguation_page: continue
+                            
+                            text_list.append(text_content)
+
                         except json.JSONDecodeError:
                             continue  # Skip lines that are not valid JSON
         
@@ -74,9 +78,15 @@ class CorpusEmbedding(EmbeddingModel):
         
         for article in corpus:
 
-            paragraphs = article.split("\n\n")
             try:
-                assert((len(paragraphs)>1), "Article must have more than 2 paragraphs.")
+                paragraphs = article.split("\n\n")
+
+                # Ignore articles which do not have body text.
+                if len(paragraphs) <= 1:
+                    print(f"Ignoring article: {article[:30]}...")
+                    continue
+
+                # assert((len(paragraphs)>1), "Article must have more than 2 paragraphs.")
 
                 title = paragraphs[0] # Title
                 summary = paragraphs[1] # First paragraph of article = summary
@@ -90,11 +100,11 @@ class CorpusEmbedding(EmbeddingModel):
                 })
 
             except Exception as e:
-                print(f"Error parsing Wikipedia article. Traceback: {str(e)}\nArticle text:\n{article}")
+                print(f"Error parsing Wikipedia article. Traceback: {str(e)}\nArticle text:\n{article[:30]}...")
 
         return articles
     
-    def embed_wikipedia_raw_text(self, raw_text_corpus_path : str, output_dir : str):
+    def embed_wikipedia_raw_text(self, raw_text_corpus_path : str, output_dir : str, fast : bool = False):
         """
         Converts a raw text Wikipedia knowledge corpus into a RAG knowledge base and stores it in ``output_dir``.
 
@@ -117,7 +127,7 @@ class CorpusEmbedding(EmbeddingModel):
             summary = article['summary']
             paragraphs = article['paragraphs']
 
-            folder_name = self.sanitise_string(title.strip())
+            folder_name = self.sanitise_string(title)
 
             article_path = os.path.join(output_dir, folder_name)
             print(f"Embedding article: {article_path}")

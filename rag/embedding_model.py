@@ -7,7 +7,7 @@ class EmbeddingModel(TransformerModel):
     Class which can embed text using an embedding model.
     """
 
-    def __init__(self, model_name = "avsolatorio/NoInstruct-small-Embedding-v0", causal = False, quantized = True, use_gpu = True):
+    def __init__(self, model_name = "avsolatorio/NoInstruct-small-Embedding-v0", causal = False, quantized = False, use_gpu = True):
         """
         Create embedding model. Source: [NoInstruct-small-Embedding-v0](https://huggingface.co/avsolatorio/NoInstruct-small-Embedding-v0).
         """
