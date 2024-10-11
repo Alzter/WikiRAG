@@ -2,6 +2,7 @@ import requests
 import os, subprocess, json
 import sys;sys.path.append("rag")
 from wiki_extractor import WikiExtractor
+from tqdm import tqdm
 
 class WikipediaDownload():
     """
@@ -26,13 +27,25 @@ class WikipediaDownload():
         dump_folder = os.path.split(dump_file_path)[0]
         if not os.path.exists(dump_folder): os.makedirs(dump_folder)
 
+        subset_str = f"{max_megabytes}M subset of " if max_megabytes is not None else ""
+        print(f"Downloading {subset_str}Wikipedia dump:")
+
+        file_size = None
+        try:
+            metadata = requests.head(dump_url)
+            file_size = metadata.headers["content-length"]
+            file_size = int(file_size)
+        except Exception: pass
+
+        if max_megabytes: file_size = max_megabytes * 1_000_000
+
         # Stream the file download
         with requests.get(dump_url, stream=True) as r, open(dump_file_path, 'wb') as f:
 
             r.raise_for_status()  # Raise an error for bad responses
             
             downloaded_size = 0
-            for chunk in r.iter_content(1024):  # Download data in chunks of 1 KB
+            for chunk in tqdm(r.iter_content(1024), "Downloading Wikipedia", total = file_size//1024 if file_size else None, unit = "KB", ):  # Download data in chunks of 1 KB
                 if chunk:
                     f.write(chunk)  # Write the chunk to the file
                     downloaded_size += len(chunk)  # Increase size counter
