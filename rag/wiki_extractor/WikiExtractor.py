@@ -139,7 +139,7 @@ options = SimpleNamespace(
 
     ##
     # Filter disambiguation pages
-    filter_disambig_pages = False,
+    filter_disambig_pages = True,
 
     ##
     # Drop tables from the article
