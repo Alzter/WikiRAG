@@ -126,6 +126,13 @@ class DenseRetrieval():
 class Retrieval():
     
     def __init__(self, corpus_path : str):
+
+        if not os.path.exists(corpus_path):
+            raise FileNotFoundError(f"Corpus path not found: {corpus_path}")
+        
+        if len(glob.glob(corpus_path + "/*/summary.txt")) == 0:
+            raise LookupError(f"No documents found in corpus. Corpus path: {corpus_path}")
+
         self.documents = self.get_document_summaries(corpus_path)
         self.corpus_path = corpus_path
         self.embedding_model = EmbeddingModel()
@@ -194,9 +201,46 @@ class Retrieval():
         
         return embeddings
     
-    def get_context(self, query : str, num_contexts = 10, use_sparse_retrieval = False, exhaustive = False) -> list[str]:
+    def get_context(self, query : str, num_contexts = 1, use_sparse_retrieval = False, exhaustive = False, ignored_articles : list = [], verbose = False) -> list[str]:
+        """
+        Given a user question, retrieve contexts in the form of paragraphs from Wikipedia articles to answer the question.
+
+        Method:
+        1. One Wikipedia article is retrieved which best answers the initial query.
+        2. Paragraphs are fetched from the chosen Wikipedia article as contexts to the query.
+
+        NOTE: This function **only works for single-hop** questions where the answer can be found from *one* article.
+        For multi-hop questions, you must first decompose the question using the ``QueryDecomposition`` class.
+
+        Args:
+            query (str): The user's question. E.g., 'Who was the first person to land on the moon?'
+
+            num_contexts (int, optional): How many paragraphs to retrieve. Defaults to 1.
+
+            use_sparse_retrieval (bool, optional):
+                Controls whether to use dense or sparse retrieval to find the best Wikipedia article to answer the user's query.
+
+                If True, uses a BM25 search of article raw text summaries to find the Wikipedia article.
+
+                If False, uses cosine similarity search of article summary embeddings to find the Wikipedia article.
+
+            exhaustive (bool, optional):
+                If True, skip the article selection step and find context by searching through **all Wikipedia articles**.
+
+                WARNING: This has high time and computational complexity.
+            
+            ignored_articles (list, optional):
+                A list of ignored Wikipedia articles which are excluded from context retrieval.
+            
+            verbose (bool, optional): If true, prints the retrieval process to the console.
         
-        print("Embedding user query for dense retrieval:")
+        Returns:
+            context (str | list[str]): A string or list of ``num_context`` contexts, where each context is a paragraph from a Wikipedia article.
+            article (str | None): The name of the article context was retrieved from, or ``None`` if ``exhaustive`` was True.
+
+        """
+        
+        if verbose: print("Embedding user query for dense retrieval:")
 
         # Convert query into an embedding
         query_embedding = self.embedding_model.get_embedding(query, input_is_query=True)
@@ -206,38 +250,68 @@ class Retrieval():
             # Load all embeddings into memory (this takes a long time)
             if not hasattr(self, "all_embeddings"):
 
-                print("Loading all document chunk embeddings into memory...")
+                if verbose: print("Loading all document chunk embeddings into memory...")
                 self.all_embeddings = self.get_document_embeddings(None)
 
             embeddings = self.all_embeddings
+            article = None
             
         else:
+            
+            number_of_articles_to_retrieve = 1 + len(ignored_articles)
+
+            # Retrieve a Wikipedia article for use as context for the query.
             if use_sparse_retrieval:
-                print("Finding best article to use as context with sparse retrieval:")
+                if verbose: print("Finding best article to use as context with sparse retrieval:")
 
                 # Use BM25 (sparse retrieval) to acquire one Wikipedia article
                 # which has the most n-gram lexical matches to the user query.
-                best_document = SparseRetrieval.get_k_best_documents(1, query, self.documents)[0]
+                best_articles = SparseRetrieval.get_k_best_documents(number_of_articles_to_retrieve, query, self.documents)
+
             else:
+                if verbose: print("Finding best article to use as context with dense retrieval:")
 
-                print("Finding best article to use as context with dense retrieval:")
+                # Use cosine similarity (dense retrieval) to find most semantically similar article summary to the user query.
+                best_articles = DenseRetrieval.get_k_best_documents(number_of_articles_to_retrieve, query_embedding, self.documents)
 
-                best_document = DenseRetrieval.get_k_best_documents(1, query_embedding, self.documents)[0]
+            best_article = None
 
-            print(f"Using Wikipedia article: {best_document.title} for context")
+            # Get the best article from the list of retrieved articles.
+            for candidate_article in best_articles:
+
+                # Do not include articles in the ignore list.
+                if candidate_article.title in ignored_articles: continue
+                
+                best_article = candidate_article
+                break
+            
+            if best_article is None:
+                raise FileNotFoundError(f"Could not find suitable article for context for use with query: {query}")
+                return [], None
+            
+            article = best_article.title
+
+            if verbose: print(f"Using Wikipedia article: {article} for context")
 
             # Retrieve all chunk embeddings from said document
-            embeddings = self.get_document_embeddings(best_document.title)
+            embeddings = self.get_document_embeddings(article)
 
-        print(f"Found {len(embeddings)} chunks for within context.")
-        print("Finding best article chunks to use as context with dense retrieval:")
+        if verbose: print(f"Found {len(embeddings)} chunks for within context.")
+        if verbose: print("Finding best article chunks to use as context with dense retrieval:")
+
+        # Do not attempt to retrieve more contexts than we have
+        num_contexts = min(num_contexts, len(embeddings))
+        num_contexts = max(num_contexts, 0)
 
         best_embeddings = DenseRetrieval.get_k_best_documents(num_contexts, query_embedding, embeddings)
 
-        print("Context successfully retrieved.")
+        if verbose: print("Context successfully retrieved.")
 
         retrieved_contexts = [embedding.raw_text for embedding in best_embeddings]
 
-        return retrieved_contexts
+        # Return context as a string if only one context was retrieved
+        if len(retrieved_contexts) == 1: retrieved_contexts = retrieved_contexts[0]
+
+        return retrieved_contexts, article
 
         

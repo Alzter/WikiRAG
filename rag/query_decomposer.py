@@ -5,8 +5,8 @@ from model_prompts import Prompt
 
 class QueryDecomposer(LLM):
 
-    def __init__():
-        return super().__init__()
+    def __init__(self):
+        super().__init__()
     
     def decompose_question_step(self, input : str | list, max_tokens : int = 50):
         """
@@ -27,23 +27,40 @@ class QueryDecomposer(LLM):
 
         if isinstance(input, str):
             input = [
-                {'role':'system','content':Prompt.cot_prompt}, # Question Decomposition Specialist Prompt
+                {'role':'system','content': Prompt.query_decomposer}, # Question Decomposition Specialist Prompt
                 {'role':'user','content':f"Let's break down this complex question: {input}"}
             ]
 
-        chat_history = self.pipeline(
-            input,
-            do_sample=True,
-            top_k=10,
-            num_return_sequences=1,
-            eos_token_id=self.tokenizer.eos_token_id,
-            truncation = True,
-            max_new_tokens=50
-        )
-
-        self.generate_response(input, max_new_tokens=50)
-
-        assistant_response = chat_history[0]['generated_text'][-1]
-        sub_question = assistant_response['content']
+        chat_history, sub_question = self.generate_response(input, max_new_tokens=max_tokens, truncation=True)
 
         return chat_history, sub_question
+    
+    def answer_question_using_context(self, query : str, context : str, use_chain_of_thought : bool = False, max_tokens = 50):
+        """
+            Given a question and some context, extract the answer to the question from the context if the answer is provided in the context, otherwise return "I don't know".
+        
+            Args:
+                query (str): The question to answer.
+                context (str): Some background information, typically a paragraph from a Wikipedia article.
+                use_chain_of_thought (bool): Whether to get the LLM to explain their reasoning process as they generate the answer.
+                    It is recommended to set this to true when generating a final response for the LLM to acquire a better answer.
+                max_tokens (int): The maximum number of words allowed for the answer.
+
+            Returns:
+                extracted_answer(str): The answer to the query using the context, or "I don't know.".
+        """
+
+        prompt = Prompt.cot_answer_with_context if use_chain_of_thought else Prompt.answer_extraction_from_context
+
+        input = [
+            {'role':'system', 'content':prompt},
+            {'role':'user','content':query},
+            {'role':'user','content':context}
+        ]
+
+        _, extracted_answer = self.generate_response(input, max_new_tokens=max_tokens, truncation=True)
+
+        return extracted_answer
+
+
+
