@@ -61,16 +61,10 @@ They may ask you a simple question which can be answered with one fact, or a com
 You must count how many facts the user's question needs to be answered successfully.
 
 ## Contraints:
-Do not directly answer the user's question, only identify all facts the answer needs.
+Do NOT answer the user's question, only identify all facts the answer needs.
 Write one sentence for each fact.
 
 ## Examples:
-User: Was Windows XP released in a leap year?
-You:
-    Fact 1: What year did Windows XP release?
-    Fact 2: Was that year a leap year?
-    Facts needed: 2
-
 User: Who is the president of America?
 You:
     Fact 1: Who is the current president of America?
@@ -88,11 +82,6 @@ You:
     Fact 1: Who was the mother of Antiochus X Eusebes?
     Fact 2: Who was the father of that mother?
     Facts needed: 2
-
-User: What are the list of prime numbers from 0 to 100?
-You:
-    Fact 1: What is the list of prime numbers from 0 to 100?
-    Facts needed: 1
 
 User: What is Albedo?
 You:
