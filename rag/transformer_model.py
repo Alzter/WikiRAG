@@ -20,7 +20,7 @@ class TransformerModel(ABC):
 
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=quantized,
-            bnb_4bit_compute_dtype=torch.bfloat16 if quantized else None
+            bnb_4bit_compute_dtype=torch.bfloat16# if quantized else None
         )
 
         print(f"Loading transformer model and tokenizer from transformers library: {model_name}\nPlease wait...\n")
