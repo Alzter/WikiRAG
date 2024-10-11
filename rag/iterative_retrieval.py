@@ -46,7 +46,7 @@ class IterativeRetrieval:
 
         return response
 
-    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 5, use_sparse_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
+    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 5, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
         """
         Answer a single-hop question by retrieving context from Wikipedia.
 
@@ -65,9 +65,13 @@ class IterativeRetrieval:
                 If True, uses a BM25 search of article raw text summaries to find the Wikipedia article.
 
                 If False, uses cosine similarity search of article summary embeddings to find the Wikipedia article.
+            exhaustive_retrieval (bool):
+                If True, retrieves context using all of the Wikipedia corpus as a search space. If False, only retrieves context from a single Wikipedia article.
+
+                WARNING: Enabling ``exhaustive_retrieval`` increases retrieval latency.
             use_chain_of_thought (bool): Whether to get the LLM to explain their reasoning process as they generate the answer.
                 Only set this to True when getting the LLM to generate a final answer for the user's query.
-            verbose (bool, optional): If true, prints the answering process to the console.
+            verbose (bool, optional): If True, prints the answering process to the console.
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not retrieve the correct context.
         """
@@ -79,7 +83,7 @@ class IterativeRetrieval:
             if verbose: print(f"Attempt {answer_attempts + 1} to answer question")
 
             # Retrieve context for the user's query from a Wikipedia article.
-            context, article = self.retriever.get_context(query, num_contexts=num_chunks, ignored_articles = visited_articles, use_sparse_retrieval = use_sparse_retrieval)
+            context, article = self.retriever.get_context(query, num_contexts=num_chunks, ignored_articles = visited_articles, use_sparse_retrieval = use_sparse_retrieval, exhaustive=exhaustive_retrieval)
 
             # If we retrieve more than one paragraph for context,
             # concatenate the paragraphs together with line breaks.
