@@ -144,7 +144,7 @@ class IterativeRetrieval:
         chat_history = [
             {'role':'system','content':Prompt.is_decomposition_needed},
             {'role':'user','content':f'Question: {query}'},
-            *context_inputs if contexts,
+            *context_inputs,
             {'role':'assistant','content':"Are follow-up questions needed here: "}
         ]
 
