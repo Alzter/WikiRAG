@@ -8,6 +8,7 @@ from embedding_model import EmbeddingModel
 
 import unicodedata
 import re
+from tqdm import tqdm
 
 class CorpusEmbedding(EmbeddingModel):
     """
@@ -42,7 +43,6 @@ class CorpusEmbedding(EmbeddingModel):
         """
         
         text_list = []
-        title_list = []
 
         for root, _, files in os.walk(raw_text_corpus_path):
             for file in files:
@@ -121,7 +121,7 @@ class CorpusEmbedding(EmbeddingModel):
 
         if not os.path.exists(output_dir): os.makedirs(output_dir)
 
-        for article in articles:
+        for article in tqdm(articles, "Embedding articles...", total=len(articles), unit="article"):
 
             title = article['title']
             summary = article['summary']
@@ -130,7 +130,7 @@ class CorpusEmbedding(EmbeddingModel):
             folder_name = self.sanitise_string(title)
 
             article_path = os.path.join(output_dir, folder_name)
-            print(f"Embedding article: {article_path}")
+            # print(f"Embedding article: {article_path}")
 
             if not os.path.exists(article_path): os.mkdir(article_path)
 
