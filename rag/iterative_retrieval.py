@@ -228,7 +228,7 @@ class IterativeRetrieval:
 
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not answer.
-            reasoning (list): The LLM's reasoning process history which was used to acquire the final answer.
+            chat_history (list[dict]): The LLM's reasoning process history which was used to acquire the final answer.
         """
         
         # Attempt to first answer the question as a single-hop question.

@@ -5,6 +5,8 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 
 from rag.wikipedia_corpus_download import WikipediaDownload
 from rag.corpus_embedding import CorpusEmbedding
+from rag.iterative_retrieval import IterativeRetrieval
+from rag.language_model import LLM
 
 app = FastAPI()
 
@@ -45,13 +47,35 @@ async def generate_knowledge_base(wikipedia_raw_text_path : str = "context/raw_t
         "embeddings_save_path" : save_path
     }
 
-@app.get("/query_rag/{query}")
-async def query_rag(query):
+@app.get("/query/{query}")
+async def query_llm(query : str, max_tokens : int = 100):
+    """
+    Have the LLM respond to a question *without* using RAG techniques.
+    """
+    llm = LLM()
 
-    # TODO: Just draw the f--- owl
+    chat_history, answer = llm.generate_response(input=query, max_new_tokens=max_tokens, truncate=True)
     
-    raise HTTPException(501, "RAG query method not yet implemented.")
-    return {"response": f"Not implemented yet: {query}"}
+    return {
+        "answer" : answer,
+        "reasoning" : chat_history
+    }
+
+@app.get("/query_rag/{query}")
+async def query_rag(query : str):
+    """
+    Have the LLM respond to a question *with* RAG techniques.
+    """
+    rag = IterativeRetrieval()
+
+    # Answer the question using RAG
+    answer, chat_history = rag.answer_multi_hop_question(query)
+
+    return {
+        "answer" : answer,
+        "reasoning" : chat_history,
+        "evidences" : None # TODO: Make RAG return list of retrieved evidences.
+    }
 
 # @app.post("/preprocess_document")
 # async def preprocess_document(document : UploadFile):
