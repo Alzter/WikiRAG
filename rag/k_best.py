@@ -23,10 +23,11 @@ def get_k_best(k : int, items : list[object], scores : list[float]):
     k = max(k, 0)
 
     # Get the indices of the highest k elements in descending order
-
+    print(f"Scores: {scores}")
+    
     best_indices = np.argsort(scores)[-k:][::-1]
 
-    #print(f"Best indices: {best_indices}")
+    print(f"Best indices: {best_indices}")
 
     best_items = [items[i] for i in best_indices]
 
