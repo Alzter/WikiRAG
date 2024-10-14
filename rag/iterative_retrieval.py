@@ -144,7 +144,7 @@ class IterativeRetrieval:
         chat_history = [
             {'role':'system','content':Prompt.is_decomposition_needed},
             {'role':'user','content':f'Question: {query}'},
-            *context_inputs if contexts,
+            *context_inputs,
             {'role':'assistant','content':"Are follow-up questions needed here: "}
         ]
 
@@ -228,7 +228,7 @@ class IterativeRetrieval:
 
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not answer.
-            reasoning (list): The LLM's reasoning process history which was used to acquire the final answer.
+            chat_history (list[dict]): The LLM's reasoning process history which was used to acquire the final answer.
         """
         
         # Attempt to first answer the question as a single-hop question.
@@ -236,10 +236,16 @@ class IterativeRetrieval:
         attempt_answer = self.answer_single_hop_question(query, num_chunks=3, max_attempts=1, use_sparse_retrieval=False, use_chain_of_thought=False)
         attempt_answer_confidence = self.evaluate_answer_confidence(attempt_answer)
 
+        if verbose: print(f"Attempted answer: {attempt_answer}")
+        if verbose: print(f"attempt_answer_confidence: {attempt_answer_confidence}")
+
         if attempt_answer_confidence > 0.1:
-            chat_history += {"role":"assistant", "content":attempt_answer}
+            if verbose: print(f"Model believes attempted answer is correct.")
+            chat_history = {"role":"assistant", "content":attempt_answer}
             return attempt_answer, chat_history
         
+        if verbose: print(f"Attempted answer is not sufficient to answer question.")
+
         # If the assistant cannot answer the question satisfactorily as a single-hop question, try decomposing the question.
 
         # Extract first sub-question, or "That's enough" if context is sufficient

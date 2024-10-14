@@ -8,6 +8,7 @@ from embedding_model import EmbeddingModel
 
 import unicodedata
 import re
+from tqdm import tqdm
 
 class CorpusEmbedding(EmbeddingModel):
     """
@@ -42,7 +43,6 @@ class CorpusEmbedding(EmbeddingModel):
         """
         
         text_list = []
-        title_list = []
 
         for root, _, files in os.walk(raw_text_corpus_path):
             for file in files:
@@ -54,15 +54,22 @@ class CorpusEmbedding(EmbeddingModel):
                             # Parse each line as JSON and extract the 'text' field
                             data = json.loads(line)
                             text_content = data.get('text', '').strip()  # Strip any leading/trailing whitespace
-                            
+                            title = data.get('title', '').strip()
                             # Only add articles with text in them.
                             if not text_content: continue
+                            if not title: continue
 
-                            text_subset = text_content[:50]
-                            article_is_disamiguation_page = "may refer to" in text_subset
-                            
                             # Ignore articles which are disambiguation pages.
-                            if article_is_disamiguation_page: continue
+                            if 'disambiguation' in title.lower().strip(): continue
+                            # text_subset = text_content[:200]
+                            # disambig_sentences = ["may refer to", "may also refer to", "can refer to"]
+
+                            # article_is_disamiguation_page = False
+                            # for sentence in disambig_sentences:
+                            #     if sentence in text_subset:
+                            #         article_is_disamiguation_page = True
+                            
+                            # if article_is_disamiguation_page: continue
                             
                             text_list.append(text_content)
 
@@ -104,13 +111,15 @@ class CorpusEmbedding(EmbeddingModel):
 
         return articles
     
-    def embed_wikipedia_raw_text(self, raw_text_corpus_path : str, output_dir : str, fast : bool = False):
+    def embed_wikipedia_raw_text(self, raw_text_corpus_path : str, output_dir : str, fast : bool = False, overwrite : bool = False):
         """
         Converts a raw text Wikipedia knowledge corpus into a RAG knowledge base and stores it in ``output_dir``.
 
         Args:
             raw_text_corpus_path (str): The path of the raw text corpus to read.
             output_dir (str): The directory where the embeddings will be saved.
+            fast (bool, optional): If true, quantizes the embedding model, leading to faster embeddings but worse accuracy.
+            overwrite (bool, optional): If true, overwrites existing entries in the knowledge base. Defaults to False.
             
         Returns:
             output_dir (str): The directory where the embeddings were saved.
@@ -121,7 +130,8 @@ class CorpusEmbedding(EmbeddingModel):
 
         if not os.path.exists(output_dir): os.makedirs(output_dir)
 
-        for article in articles:
+        progress_bar = tqdm(articles, "Embedding articles...", total=len(articles), unit="article")
+        for article in progress_bar:
 
             title = article['title']
             summary = article['summary']
@@ -129,8 +139,14 @@ class CorpusEmbedding(EmbeddingModel):
 
             folder_name = self.sanitise_string(title)
 
+            progress_bar.set_postfix_str(title)
+
             article_path = os.path.join(output_dir, folder_name)
-            print(f"Embedding article: {article_path}")
+            # print(f"Embedding article: {article_path}")
+            
+            # Ignore articles we have already saved.
+            if os.path.exists(article_path) and not overwrite:
+                continue
 
             if not os.path.exists(article_path): os.mkdir(article_path)
 
@@ -163,6 +179,6 @@ class CorpusEmbedding(EmbeddingModel):
                 embedding_data_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.npy")
                 np.save(embedding_data_file_path, embedding, allow_pickle=True)
 
-                print(f"Embed paragraph {paragraph_id} for article {title}")
+                # print(f"Embed paragraph {paragraph_id} for article {title}")
 
         return output_dir
