@@ -79,6 +79,7 @@ class HNSW():
         if self.ef <= k:
             self.ef = k + 1 
             self.hnsw.set_ef(self.ef)  # ef should always be greater than k
+        
         scores, _ = HNSW.get_scores(self.hnsw, query, k = 10)
 
         print(f"Length of corpus: {len(self.corpus)}")
@@ -234,10 +235,15 @@ class Retrieval():
             parent_directory = os.path.split(os.path.dirname(summary_file))[-1]
 
             # Set the loading bar's postfix to the name of the article.
-            progress.set_postfix_str(parent_directory)
+            progress.set_postfix_str(parent_directory[:10] + "...")
 
-            with open(summary_file, "r", encoding='utf-8') as f:
-                summary_text = f.read()
+            # Try reading the summary w/o encoding first
+            try:
+                with open(summary_file, "r") as f:
+                    summary_text = f.read()
+            except Exception:
+                with open(summary_file, "r", encoding='utf-8') as f:
+                    summary_text = f.read()
 
             embedding_data = np.load(summary_embedding, encoding='bytes', allow_pickle=True)
             embedding_data = torch.Tensor(embedding_data)
@@ -280,7 +286,7 @@ class Retrieval():
         
         return embeddings
     
-    def get_context(self, query : str, num_contexts = 1, use_sparse_retrieval = False, exhaustive = False, hnsw = True, ignored_articles : list = [], verbose = False) -> list[str]:
+    def get_context(self, query : str, num_contexts = 1, hnsw : bool = False, use_sparse_retrieval : bool = False, exhaustive : bool = False, ignored_articles : list = [], verbose = False) -> list[str]:
         """
         Given a user question, retrieve contexts in the form of paragraphs from Wikipedia articles to answer the question.
 
@@ -296,8 +302,13 @@ class Retrieval():
 
             num_contexts (int, optional): How many paragraphs to retrieve. Defaults to 1.
 
+            hnsw (bool, optional):
+                Controls whether to use Hierarchical Navigable Small Worlds (HNSW) for retrieval to find the closest article
+                to the user's query. This is an optimisation technique which makes retrieval faster.
+
             use_sparse_retrieval (bool, optional):
                 Controls whether to use dense or sparse retrieval to find the best Wikipedia article to answer the user's query.
+                This **only works** if ``hnsw`` is set to ``False``.
 
                 If True, uses a BM25 search of article raw text summaries to find the Wikipedia article.
 
@@ -340,19 +351,20 @@ class Retrieval():
             number_of_articles_to_retrieve = 1 + len(ignored_articles)
 
             # Retrieve a Wikipedia article for use as context for the query.
-            if use_sparse_retrieval:
-                if verbose: print("Finding best article to use as context with sparse retrieval:")
-
-                # Use BM25 (sparse retrieval) to acquire one Wikipedia article
-                # which has the most n-gram lexical matches to the user query.
-                best_articles = SparseRetrieval.get_k_best_documents(number_of_articles_to_retrieve, query, self.documents)
             
-            elif hnsw:
+            if hnsw:
                 if verbose: print("Finding best article to use as context with HSNW retrieval:")
                 # hnsw_retrieval = HNSW(ef_Construction=200, mL = 1.5, M = 5, Mmax = 10, corpus = self.documents)
                 # best_articles = hnsw_retrieval.k_nn_search(query, k = 5, ef = 50)
 
                 best_articles = self.hsnw_search.get_k_best_documents(number_of_articles_to_retrieve, query_embedding)
+
+            elif use_sparse_retrieval:
+                if verbose: print("Finding best article to use as context with sparse retrieval:")
+
+                # Use BM25 (sparse retrieval) to acquire one Wikipedia article
+                # which has the most n-gram lexical matches to the user query.
+                best_articles = SparseRetrieval.get_k_best_documents(number_of_articles_to_retrieve, query, self.documents)
 
             else:
                 if verbose: print("Finding best article to use as context with dense retrieval:")

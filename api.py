@@ -64,19 +64,19 @@ async def query_llm(query : str, max_tokens : int = 100):
     }
 
 @app.get("/query_rag/{query}")
-async def query_rag(query : str):
+async def query_rag(query : str, corpus_path : str, num_threads : int = 4):
     """
     Have the LLM respond to a question *with* RAG techniques.
     """
-    rag = IterativeRetrieval()
+    rag = IterativeRetrieval(corpus_path, num_threads=num_threads)
 
     # Answer the question using RAG
-    answer, chat_history = rag.answer_multi_hop_question(query)
+    answer, chat_history, articles = rag.answer_multi_hop_question(query)
 
     return {
         "answer" : answer,
         "reasoning" : chat_history,
-        "evidences" : None # TODO: Make RAG return list of retrieved evidences.
+        "evidences" : articles
     }
 
 # @app.post("/preprocess_document")

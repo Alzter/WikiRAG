@@ -91,14 +91,16 @@ class IterativeRetrieval:
             verbose (bool, optional): If True, prints the answering process to the console.
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not retrieve the correct context.
+            chat_history (list[dict]): The LLM's reasoning process to answer the question.
+            article (str): The name of the article used to answer the question.
             
-        """ # chat_history (list[dict]): The LLM's reasoning process to answer the question.
+        """
 
         answer = None
         answer_attempts = 0
         visited_articles = []
 
-        chat_history = [{'role':'user','content':query}]
+        chat_history = []
 
         while answer is None and answer_attempts < max_attempts:
             if verbose: print(f"Attempt {answer_attempts + 1} to answer question")
@@ -117,6 +119,8 @@ class IterativeRetrieval:
 
             # Attempt to answer the question using the retrieved context.
             answer, sub_q_chat_history = self.qd.answer_question_using_context(query, context, use_chain_of_thought=use_chain_of_thought)
+
+            chat_history.append(sub_q_chat_history)
             
             # Evaluate how confident the model is in their answer from 1 to 0.
             answer_confidence = self.evaluate_answer_confidence(answer)
@@ -129,7 +133,7 @@ class IterativeRetrieval:
         
         if answer == None: answer = "I don't know."
 
-        return answer
+        return answer, chat_history, article
 
     def is_answer_attainable(self, query : str, contexts : list[str]) -> tuple[bool, list[dict]]:
         """
@@ -232,6 +236,7 @@ class IterativeRetrieval:
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not answer.
             chat_history (list[dict]): The LLM's reasoning process history which was used to acquire the final answer.
+            articles (list[str]): The names of all articles used as contexts for the answer.
         """
         
         # If the assistant cannot answer the question satisfactorily as a single-hop question, try decomposing the question.
@@ -242,19 +247,23 @@ class IterativeRetrieval:
         hops = 0
 
         contexts = []
+        articles = []
         
         while self.evaluate_similarity(sub_question, "That's enough.") < 0.9 and hops < maximum_reasoning_steps:        
             if verbose: print(f"Extracted sub-question: {sub_question}")
             if verbose: print("Attempting to answer sub-question...")
 
             # Answer the first sub-question using by retrieving context from the knowleddge base.
-            sub_answer = self.answer_single_hop_question(sub_question, max_attempts=max_sub_question_answer_attempts, num_chunks=num_chunks)
+            sub_answer, sub_answer_history, sub_answer_article = self.answer_single_hop_question(sub_question, max_attempts=max_sub_question_answer_attempts, num_chunks=num_chunks)
+
+            articles.append(sub_answer_article)
+            chat_history.append(sub_answer_history)
             
             # If we could not find appropriate context to answer a sub-question,
             # end the retrieval process and answer "I don't know".
             if sub_answer == "I don't know.":
                 chat_history.append({"role":"assistant", "content":"I don't know."})
-                return "I don't know.", chat_history
+                return "I don't know.", chat_history, articles
             
             contexts.append(sub_answer)
 
@@ -280,7 +289,7 @@ class IterativeRetrieval:
         # If we were not able to find enough context to answer the multi-hop question, answer "I don't know".
         if hops == maximum_reasoning_steps:
             chat_history.append({"role":"assistant", "content":"I don't know."})
-            return "I don't know.", chat_history
+            return "I don't know.", chat_history, articles
 
         if verbose: print(f"Retrieved enough context to answer original question: {query}\nContext:\n{str(contexts)}")
 
@@ -288,7 +297,7 @@ class IterativeRetrieval:
 
         chat_history.append(final_answer_retrieval_process)
 
-        return final_answer, chat_history
+        return final_answer, chat_history, articles
 
 
     def answer_question(self, query : str, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
@@ -315,11 +324,12 @@ class IterativeRetrieval:
         Returns:
             answer (str): The answer to the question, or "I don't know" if the model could not answer.
             chat_history (list[dict]): The LLM's reasoning process history which was used to acquire the final answer.
+            articles (list[str]): The names of all articles used as contexts for the answer.
         """
 
         # Attempt to first answer the question as a single-hop question.
         if verbose: print("Attempting to answer the question directly:")
-        attempt_answer = self.answer_single_hop_question(query, num_chunks=3, max_attempts=1, use_sparse_retrieval=False, use_chain_of_thought=False)
+        attempt_answer, attempt_answer_reasoning, attempt_answer_article = self.answer_single_hop_question(query, num_chunks=3, max_attempts=1, use_sparse_retrieval=False, use_chain_of_thought=False)
         attempt_answer_confidence = self.evaluate_answer_confidence(attempt_answer)
 
         if verbose: print(f"Attempted answer: {attempt_answer}")
@@ -327,8 +337,7 @@ class IterativeRetrieval:
 
         if attempt_answer_confidence > 0.1:
             if verbose: print(f"Model believes attempted answer is correct.")
-            chat_history = {"role":"assistant", "content":attempt_answer}
-            return attempt_answer, chat_history
+            return attempt_answer, attempt_answer_reasoning, attempt_answer_article
         
         # If this fails, answer the question using iterative reasoning.
         if verbose: print(f"Attempted answer is not sufficient to answer question.")
