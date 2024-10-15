@@ -236,7 +236,7 @@ class Retrieval():
             # Set the loading bar's postfix to the name of the article.
             progress.set_postfix_str(parent_directory)
 
-            with open(summary_file, "r") as f:
+            with open(summary_file, "r", encoding='utf-8') as f:
                 summary_text = f.read()
 
             embedding_data = np.load(summary_embedding, encoding='bytes', allow_pickle=True)
