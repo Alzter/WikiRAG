@@ -35,13 +35,15 @@ async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/
 #     }
 
 @app.get("/generate_knowledge_base/")
-async def generate_knowledge_base(wikipedia_raw_text_path : str = "context/raw_text", output_dir : str = "context/knowledge_base"):
-    """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``."""
+async def generate_knowledge_base(wikipedia_raw_text_path : str = "context/raw_text", output_dir : str = "context/knowledge_base", batch_size_mb : int = 50):
+    """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``.
+    
+    Articles are processed in batches of megabyte size ``batch_size_mb``."""
     
     # Load the embedding and tokenizer model
     model = CorpusEmbedding()
 
-    save_path = model.embed_wikipedia_raw_text(wikipedia_raw_text_path, output_dir)
+    save_path = model.embed_wikipedia_raw_text(wikipedia_raw_text_path, output_dir=output_dir, batch_size_mb=batch_size_mb)
 
     return {
         "embeddings_save_path" : save_path
