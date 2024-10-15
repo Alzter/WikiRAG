@@ -5,6 +5,11 @@ import k_best
 from rank_bm25 import BM25Okapi
 import torch
 from tqdm import tqdm
+import hnswlib
+
+import chardet
+# import sys;sys.path.append("./test")
+# from tests.hnsw import HNSW, _euclidean_distance
 
 class Document():
     def __init__(self, title : str, summary : str, embedding : torch.Tensor):
@@ -13,6 +18,67 @@ class Document():
 class Embedding():
     def __init__(self, raw_text : str, embedding : torch.Tensor):
         self.raw_text = raw_text; self.embedding = embedding
+
+class HNSW():
+    """
+    Hierarchical Navigable Small World graphs (HNSW) is an algorithm that allows for 
+    efficient nearest neighbor search, and the Sentence Transformers library allows for 
+    the generation of semantically meaningful sentence embeddings.
+    """
+    def __init__(self, 
+            corpus: list[Document],
+            ef: int, 
+            space = 'l2',   # 'l2' refers to the Euclidean distance
+            ef_construction = 200,
+            M = 16
+            ):
+        self.corpus = corpus
+        self.corpus_embeddings = [document.embedding for document in corpus]
+        self.dim = corpus[0].embedding.shape[-1]
+        self.ef = ef
+        # Build the index
+        self.hnsw = None
+        self.generate_hnsw(
+            space, 
+            num_elements=len(self.corpus_embeddings),
+            ef_construction = ef_construction,
+            M = M,
+            data = self.corpus_embeddings
+            )
+        
+    def generate_hnsw(self, space, num_elements, ef_construction, M, data):
+        self.hnsw = hnswlib.Index(space = space, dim = self.dim)  # 'l2' refers to the Euclidean distance
+        self.hnsw.set_num_threads(4)
+        self.hnsw.init_index(
+            max_elements = num_elements, 
+            ef_construction = ef_construction, 
+            M = M)
+        
+        # Add items to HNSW index
+        # for i, doc in enumerate(data):
+        #     # Convert each torch tensor to NumPy array and remove batch dimension (if necessary)
+        #     numpy_embedding = doc.squeeze(0).numpy()  # Remove batch dim [1, 384] -> [384]
+        #     # print(numpy_embedding.shape)  # Should be (384,)
+        #     # print(numpy_embedding)
+        #     self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
+        
+        for doc in data:
+            self.hnsw.add_items(doc[-1])    # Add to hnswlib
+
+    @staticmethod
+    def get_scores(hnsw, query : torch.Tensor, k : int) -> list[float]:
+        labels, distances = hnsw.knn_query(query, k)
+        return labels[0], distances
+
+
+    # @staticmethod
+    def get_k_best_documents(self, k : int, query : torch.Tensor) -> list[Embedding]:
+        if self.ef <= k:
+            self.ef = k + 1 
+            self.hnsw.set_ef(self.ef)  # ef should always be greater than k
+        scores, _ = HNSW.get_scores(self.hnsw, query, k = 10)
+        top_k = k_best.get_k_best(k, self.corpus, scores)
+        return top_k  
 
 class SparseRetrieval():
     """
@@ -118,8 +184,6 @@ class DenseRetrieval():
         """
 
         scores = DenseRetrieval.get_scores(query, corpus)
-        #print(f"Scores: {scores}")
-        #print(f"Corpus: {corpus}")
         top_k = k_best.get_k_best(k, corpus, scores)
 
         return top_k
@@ -198,7 +262,7 @@ class Retrieval():
             embedding_data = np.load(embedding_file, encoding='bytes', allow_pickle=True)
             embedding_data = torch.Tensor(embedding_data)
 
-            with open(raw_text_file, "r") as f:
+            with open(raw_text_file, "r", encoding='utf-8') as f:
                 raw_text = f.read()
             
             embedding = Embedding(raw_text=raw_text, embedding=embedding_data)
@@ -207,7 +271,7 @@ class Retrieval():
         
         return embeddings
     
-    def get_context(self, query : str, num_contexts = 1, use_sparse_retrieval = False, exhaustive = False, ignored_articles : list = [], verbose = False) -> list[str]:
+    def get_context(self, query : str, num_contexts = 1, use_sparse_retrieval = False, exhaustive = False, hnsw = False, ignored_articles : list = [], verbose = False) -> list[str]:
         """
         Given a user question, retrieve contexts in the form of paragraphs from Wikipedia articles to answer the question.
 
@@ -261,7 +325,7 @@ class Retrieval():
 
             embeddings = self.all_embeddings
             article = None
-            
+            # print(f"EMBEDDING: {embeddings[1].embedding.shape}") # EMBEDDING: torch.Size([1, 384])
         else:
             
             number_of_articles_to_retrieve = 1 + len(ignored_articles)
@@ -273,7 +337,12 @@ class Retrieval():
                 # Use BM25 (sparse retrieval) to acquire one Wikipedia article
                 # which has the most n-gram lexical matches to the user query.
                 best_articles = SparseRetrieval.get_k_best_documents(number_of_articles_to_retrieve, query, self.documents)
-
+            elif hnsw:
+                if verbose: print("Finding best article to use as context with hnsw retrieval:")
+                # hnsw_retrieval = HNSW(ef_Construction=200, mL = 1.5, M = 5, Mmax = 10, corpus = self.documents)
+                # best_articles = hnsw_retrieval.k_nn_search(query, k = 5, ef = 50)
+                hnsw = HNSW(self.documents, ef=50,space = 'l2')
+                best_articles = hnsw.get_k_best_documents(number_of_articles_to_retrieve, query_embedding)
             else:
                 if verbose: print("Finding best article to use as context with dense retrieval:")
 
@@ -284,7 +353,7 @@ class Retrieval():
 
             # Get the best article from the list of retrieved articles.
             for candidate_article in best_articles:
-
+                print(f"Candidate title: {candidate_article.title}")
                 # Do not include articles in the ignore list.
                 if candidate_article.title in ignored_articles: continue
                 
