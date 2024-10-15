@@ -144,9 +144,14 @@ class CorpusEmbedding(EmbeddingModel):
             article_path = os.path.join(output_dir, folder_name)
             # print(f"Embedding article: {article_path}")
             
-            # Ignore articles we have already saved.
-            if os.path.exists(article_path) and not overwrite:
-                continue
+            if not overwrite:
+                
+                # Ignore articles we have already saved.
+                if os.path.exists(article_path):
+
+                    # Does the summary.txt file exist? If not, don't ignore the article.
+                    if os.path.isfile( os.path.join(article_path, "summary.txt") ):
+                            continue
 
             if not os.path.exists(article_path): os.mkdir(article_path)
 
