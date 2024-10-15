@@ -6,6 +6,7 @@ import re
 class IterativeRetrieval:
 
     def __init__(self, corpus_path : str, num_threads=4):
+        print("Loading RAG model...")
         self.retriever = Retrieval(corpus_path, num_threads=num_threads)
         self.qd = QueryDecomposer()
 

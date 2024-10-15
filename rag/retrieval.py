@@ -196,6 +196,8 @@ class DenseRetrieval():
 class Retrieval():
     def __init__(self, corpus_path : str, num_threads : int = 4):
         
+        print("Searching for files in knowledge base...")
+        
         if not os.path.exists(corpus_path):
             raise FileNotFoundError(f"Corpus path not found: {corpus_path}")
         
