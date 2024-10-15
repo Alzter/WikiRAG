@@ -4,6 +4,7 @@ from embedding_model import EmbeddingModel
 import k_best
 from rank_bm25 import BM25Okapi
 import torch
+from tqdm import tqdm
 
 class Document():
     def __init__(self, title : str, summary : str, embedding : torch.Tensor):
@@ -124,15 +125,15 @@ class DenseRetrieval():
         return top_k
 
 class Retrieval():
-    
     def __init__(self, corpus_path : str):
-
+        
         if not os.path.exists(corpus_path):
             raise FileNotFoundError(f"Corpus path not found: {corpus_path}")
         
         if len(glob.glob(corpus_path + "/*/summary.txt")) == 0:
             raise LookupError(f"No documents found in corpus. Corpus path: {corpus_path}")
 
+        print("Loading knowledge base...")
         self.documents = self.get_document_summaries(corpus_path)
         self.corpus_path = corpus_path
         self.embedding_model = EmbeddingModel()
@@ -152,10 +153,15 @@ class Retrieval():
 
         assert(len(summary_files) == len(summary_embeddings), "Summary text files should directly map to summary embedding files.")
         
-        for summary_file, summary_embedding in zip(summary_files, summary_embeddings):
+        progress = tqdm(zip(summary_files, summary_embeddings), "Loading knowledge base", len(summary_embeddings), unit="article")
+
+        for summary_file, summary_embedding in progress:
             
             # Get the parent directory of the summary file
             parent_directory = os.path.split(os.path.dirname(summary_file))[-1]
+
+            # Set the loading bar's postfix to the name of the article.
+            progress.set_postfix_str(parent_directory)
 
             with open(summary_file, "r") as f:
                 summary_text = f.read()
