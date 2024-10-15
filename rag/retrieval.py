@@ -7,10 +7,6 @@ import torch
 from tqdm import tqdm
 import hnswlib
 
-import chardet
-# import sys;sys.path.append("./test")
-# from tests.hnsw import HNSW, _euclidean_distance
-
 class Document():
     def __init__(self, title : str, summary : str, embedding : torch.Tensor):
         self.title = title; self.summary = summary; self.embedding = embedding
@@ -26,16 +22,20 @@ class HNSW():
     the generation of semantically meaningful sentence embeddings.
     """
     def __init__(self, 
-            corpus: list[Document],
-            ef: int, 
-            space = 'l2',   # 'l2' refers to the Euclidean distance
-            ef_construction = 200,
-            M = 16
-            ):
+                corpus: list[Document],
+                ef: int, 
+                space = 'l2',   # 'l2' refers to the Euclidean distance
+                ef_construction = 200,
+                M = 16,
+                num_threads = 4
+        ):
+            
         self.corpus = corpus
         self.corpus_embeddings = [document.embedding for document in corpus]
         self.dim = corpus[0].embedding.shape[-1]
         self.ef = ef
+        self.threads = num_threads
+
         # Build the index
         self.hnsw = None
         self.generate_hnsw(
@@ -44,11 +44,11 @@ class HNSW():
             ef_construction = ef_construction,
             M = M,
             data = self.corpus_embeddings
-            )
+        )
         
     def generate_hnsw(self, space, num_elements, ef_construction, M, data):
         self.hnsw = hnswlib.Index(space = space, dim = self.dim)  # 'l2' refers to the Euclidean distance
-        self.hnsw.set_num_threads(4)
+        self.hnsw.set_num_threads(self.threads)
         self.hnsw.init_index(
             max_elements = num_elements, 
             ef_construction = ef_construction, 
@@ -68,8 +68,11 @@ class HNSW():
     @staticmethod
     def get_scores(hnsw, query : torch.Tensor, k : int) -> list[float]:
         labels, distances = hnsw.knn_query(query, k)
-        return labels[0], distances
 
+        print(f"Scores: {labels}")
+        print(f"Length of scores: {len(labels)}")
+
+        return labels[0], distances
 
     # @staticmethod
     def get_k_best_documents(self, k : int, query : torch.Tensor) -> list[Embedding]:
@@ -77,8 +80,10 @@ class HNSW():
             self.ef = k + 1 
             self.hnsw.set_ef(self.ef)  # ef should always be greater than k
         scores, _ = HNSW.get_scores(self.hnsw, query, k = 10)
+
+        print(f"Length of corpus: {len(self.corpus)}")
         top_k = k_best.get_k_best(k, self.corpus, scores)
-        return top_k  
+        return top_k
 
 class SparseRetrieval():
     """
@@ -189,7 +194,7 @@ class DenseRetrieval():
         return top_k
 
 class Retrieval():
-    def __init__(self, corpus_path : str):
+    def __init__(self, corpus_path : str, num_threads : int = 4):
         
         if not os.path.exists(corpus_path):
             raise FileNotFoundError(f"Corpus path not found: {corpus_path}")
@@ -201,6 +206,8 @@ class Retrieval():
         self.documents = self.get_document_summaries(corpus_path)
         self.corpus_path = corpus_path
         self.embedding_model = EmbeddingModel()
+        
+        self.hsnw_search = HNSW(self.documents, ef=50, space = 'l2', num_threads=num_threads)
 
 
     def get_document_summaries(self, corpus_path : str) -> list[Document]:
@@ -271,7 +278,7 @@ class Retrieval():
         
         return embeddings
     
-    def get_context(self, query : str, num_contexts = 1, use_sparse_retrieval = False, exhaustive = False, hnsw = False, ignored_articles : list = [], verbose = False) -> list[str]:
+    def get_context(self, query : str, num_contexts = 1, use_sparse_retrieval = False, exhaustive = False, hnsw = True, ignored_articles : list = [], verbose = False) -> list[str]:
         """
         Given a user question, retrieve contexts in the form of paragraphs from Wikipedia articles to answer the question.
 
@@ -337,12 +344,14 @@ class Retrieval():
                 # Use BM25 (sparse retrieval) to acquire one Wikipedia article
                 # which has the most n-gram lexical matches to the user query.
                 best_articles = SparseRetrieval.get_k_best_documents(number_of_articles_to_retrieve, query, self.documents)
+            
             elif hnsw:
-                if verbose: print("Finding best article to use as context with hnsw retrieval:")
+                if verbose: print("Finding best article to use as context with HSNW retrieval:")
                 # hnsw_retrieval = HNSW(ef_Construction=200, mL = 1.5, M = 5, Mmax = 10, corpus = self.documents)
                 # best_articles = hnsw_retrieval.k_nn_search(query, k = 5, ef = 50)
-                hnsw = HNSW(self.documents, ef=50,space = 'l2')
-                best_articles = hnsw.get_k_best_documents(number_of_articles_to_retrieve, query_embedding)
+
+                best_articles = self.hsnw_search.get_k_best_documents(number_of_articles_to_retrieve, query_embedding)
+
             else:
                 if verbose: print("Finding best article to use as context with dense retrieval:")
 

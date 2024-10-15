@@ -5,8 +5,8 @@ import re
 
 class IterativeRetrieval:
 
-    def __init__(self, corpus_path : str):
-        self.retriever = Retrieval(corpus_path)
+    def __init__(self, corpus_path : str, num_threads=4):
+        self.retriever = Retrieval(corpus_path, num_threads=num_threads)
         self.qd = QueryDecomposer()
 
     def evaluate_similarity(self, sentence_a, sentence_b):
@@ -263,7 +263,7 @@ class IterativeRetrieval:
             chat_history.append({'role': 'user', 'content': sub_answer})
 
             # Stop if context is sufficient to answer original question.
-            
+
             if verbose: print("Evaluating whether contexts are sufficient to answer original query...")
             can_answer = self.is_answer_attainable(query, contexts)
             if can_answer:
