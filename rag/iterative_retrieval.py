@@ -262,17 +262,19 @@ class IterativeRetrieval:
             # Add the sub-answer to the chat history.
             chat_history.append({'role': 'user', 'content': sub_answer})
 
-            if verbose: print(f"Decomposing question again...")
-
-            # Extract further sub-questions, or "That's enough" if context is sufficient
-            chat_history, sub_question = self.qd.decompose_question_step(chat_history)
-            hops += 1
-
+            # Stop if context is sufficient to answer original question.
+            
             if verbose: print("Evaluating whether contexts are sufficient to answer original query...")
             can_answer = self.is_answer_attainable(query, contexts)
             if can_answer:
                 if verbose: print("Model is confident that it can answer the original question")
                 break
+
+            # Extract further sub-questions, or "That's enough" if context is sufficient
+            if verbose: print(f"Decomposing question again...")
+
+            chat_history, sub_question = self.qd.decompose_question_step(chat_history)
+            hops += 1
         
         # If we were not able to find enough context to answer the multi-hop question, answer "I don't know".
         if hops == maximum_reasoning_steps:
