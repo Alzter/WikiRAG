@@ -302,7 +302,7 @@ class Retrieval():
         
         assert(len(embedding_files) == len(embedding_texts), "Embedding raw text files should directly map to embedding data files.")
 
-        for embedding_file, raw_text_file in zip(embedding_files, embedding_texts):
+        for embedding_file, raw_text_file in tqdm(zip(embedding_files, embedding_texts), "Loading document embeddings..."):
 
             embedding_data = np.load(embedding_file, encoding='bytes', allow_pickle=True)
             embedding_data = torch.Tensor(embedding_data)
