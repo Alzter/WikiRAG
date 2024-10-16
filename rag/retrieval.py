@@ -60,7 +60,7 @@ class HNSW():
             data = self.corpus_embeddings
         )
         
-    def generate_hnsw(self, space, ef_construction, M, data):
+    def generate_hnsw(self, space, num_elements, ef_construction, M, data):
         """
         Declare and initialise the HNSW index.
 
@@ -79,7 +79,7 @@ class HNSW():
         self.hnsw = hnswlib.Index(space = space, dim = self.dim)  # 'l2' refers to the Euclidean distance
         self.hnsw.set_num_threads(self.threads)
         self.hnsw.init_index(
-            max_elements = len(data), 
+            max_elements = num_elements, 
             ef_construction = ef_construction, 
             M = M)
         
