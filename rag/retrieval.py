@@ -26,7 +26,7 @@ class HNSW():
                 ef: int, 
                 space = 'l2',   # 'l2' refers to the Euclidean distance
                 ef_construction = 200,
-                M = 16,
+                M = 28,
                 num_threads = 4
         ):
             
@@ -55,15 +55,15 @@ class HNSW():
             M = M)
         
         # Add items to HNSW index
-        # for i, doc in enumerate(data):
-        #     # Convert each torch tensor to NumPy array and remove batch dimension (if necessary)
-        #     numpy_embedding = doc.squeeze(0).numpy()  # Remove batch dim [1, 384] -> [384]
-        #     # print(numpy_embedding.shape)  # Should be (384,)
-        #     # print(numpy_embedding)
-        #     self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
+        for i, doc in enumerate(data):
+            # Convert each torch tensor to NumPy array and remove batch dimension (if necessary)
+            numpy_embedding = doc.squeeze(0).numpy()  # Remove batch dim [1, 384] -> [384]
+            # print(numpy_embedding.shape)  # Should be (384,)
+            # print(numpy_embedding)
+            self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
         
-        for doc in data:
-            self.hnsw.add_items(doc[-1])    # Add to hnswlib
+        # for doc in data:
+        #     self.hnsw.add_items(doc[-1])    # Add to hnswlib
 
     @staticmethod
     def get_scores(hnsw, query : torch.Tensor, k : int) -> list[float]:
@@ -80,7 +80,7 @@ class HNSW():
             self.ef = k + 1 
             self.hnsw.set_ef(self.ef)  # ef should always be greater than k
         
-        scores, _ = HNSW.get_scores(self.hnsw, query, k = 10)
+        scores, _ = HNSW.get_scores(self.hnsw, query, k = 1)
 
         print(f"Length of corpus: {len(self.corpus)}")
         top_k = k_best.get_k_best(k, self.corpus, scores)
@@ -197,7 +197,7 @@ class DenseRetrieval():
 class Retrieval():
     def __init__(self, corpus_path : str, num_threads : int = 4):
         
-        print("Searching for files in knowledge base...")
+        print("Searching for files in knowledge...")
         
         if not os.path.exists(corpus_path):
             raise FileNotFoundError(f"Corpus path not found: {corpus_path}")
@@ -205,12 +205,17 @@ class Retrieval():
         if len(glob.glob(corpus_path + "/*/summary.txt")) == 0:
             raise LookupError(f"No documents found in corpus. Corpus path: {corpus_path}")
 
-        print("Loading knowledge base...")
+        print(f"Loading knowledge base from path '{corpus_path}'...")
         self.documents = self.get_document_summaries(corpus_path)
         self.corpus_path = corpus_path
         self.embedding_model = EmbeddingModel()
-        
-        self.hsnw_search = HNSW(self.documents, ef=50, space = 'l2', num_threads=num_threads)
+        """
+            For search metric of HNSW, change parameter 'space':
+                'l2': Euclidean Distance
+                'cosine': Cosine
+                'ip': Inner product (Dot product)
+        """
+        self.hsnw_search = HNSW(self.documents, ef=250, space = 'cosine', num_threads=num_threads)   
 
 
     def get_document_summaries(self, corpus_path : str) -> list[Document]:
