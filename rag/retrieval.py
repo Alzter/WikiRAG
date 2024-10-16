@@ -48,11 +48,13 @@ class HNSW():
         self.ef = ef
         self.threads = num_threads
 
+        self.num_elements = len(np.squeeze(self.corpus_embeddings))
+
         # Build the index
         self.hnsw = None
         self.generate_hnsw(
             space, 
-            num_elements= len(self.corpus_embeddings),
+            num_elements= self.num_elements,
             ef_construction = ef_construction,
             M = M,
             data = self.corpus_embeddings
