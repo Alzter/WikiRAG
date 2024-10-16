@@ -101,11 +101,6 @@ class HNSW():
         # Use HNSW to get the indices of the closest K embeddings and their distances from the query.
         best_embedding_indices, distances = self.hnsw.knn_query(query, k)
         
-        # All elements are wrapped within an additional array, so we must remove that.
-        best_embedding_indices, distances = np.squeeze(best_embedding_indices), np.squeeze(distances)
-
-        print(f"Labels: {len(best_embedding_indices)} - Scores: {len(distances)}")
-
         # Normalise all distance values to a range from 0 to 1 using min-max scaling.
         distances_normalised = (distances - distances.min()) / (distances.max() - distances.min())
 
@@ -113,13 +108,11 @@ class HNSW():
         # I.e., the lesser distance we have, the closer we are to the query, so the greater our score.
         scores = 1 - distances_normalised
 
-        print(f"Labels: {len(best_embedding_indices)} - Scores: {len(scores)}")
-
         # Sort the embedding indices from best to worst.
         best_embedding_indices = k_best.get_k_best(k, best_embedding_indices, scores)
 
         # Get the embedding objects from our indices.
-        best_embeddings = [self.corpus[index] for index in best_embedding_indices]
+        best_embeddings = [self.corpus[int(index)] for index in best_embedding_indices]
 
         return best_embeddings
 
@@ -328,7 +321,7 @@ class Retrieval():
         
         return embeddings
     
-    def get_context(self, query : str, num_contexts = 1, hnsw : bool = False, use_sparse_retrieval : bool = False, exhaustive : bool = False, ignored_articles : list = [], verbose = False) -> list[str]:
+    def get_context(self, query : str, num_contexts = 1, hnsw : bool = True, use_sparse_retrieval : bool = False, exhaustive : bool = False, ignored_articles : list = [], verbose = False) -> list[str]:
         """
         Given a user question, retrieve contexts in the form of paragraphs from Wikipedia articles to answer the question.
 
