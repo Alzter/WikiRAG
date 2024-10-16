@@ -48,11 +48,13 @@ class HNSW():
         self.ef = ef
         self.threads = num_threads
 
+        self.num_elements = len(np.squeeze(self.corpus_embeddings))
+
         # Build the index
         self.hnsw = None
         self.generate_hnsw(
             space, 
-            num_elements= len(self.corpus_embeddings),
+            num_elements= self.num_elements,
             ef_construction = ef_construction,
             M = M,
             data = self.corpus_embeddings
@@ -102,12 +104,16 @@ class HNSW():
         # All elements are wrapped within an additional array, so we must remove that.
         best_embedding_indices, distances = np.squeeze(best_embedding_indices), np.squeeze(distances)
 
+        print(f"Labels: {len(best_embedding_indices)} - Scores: {len(distances)}")
+
         # Normalise all distance values to a range from 0 to 1 using min-max scaling.
         distances_normalised = (distances - distances.min()) / (distances.max() - distances.min())
 
         # The embedding similarity scores are the inverse of our embedding distances.
         # I.e., the lesser distance we have, the closer we are to the query, so the greater our score.
         scores = 1 - distances_normalised
+
+        print(f"Labels: {len(best_embedding_indices)} - Scores: {len(scores)}")
 
         # Sort the embedding indices from best to worst.
         best_embedding_indices = k_best.get_k_best(k, best_embedding_indices, scores)
