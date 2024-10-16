@@ -19,7 +19,7 @@ class LLM(TransformerModel):
             device_map="auto",
         )
     
-    def generate_response(self, input : str | list, max_new_tokens, truncation = True, continue_final_message=False):
+    def generate_response(self, input : str | list, max_new_tokens : int, truncation := True, continue_final_message := False):
         """
         Generate a response to the user's query.
 
