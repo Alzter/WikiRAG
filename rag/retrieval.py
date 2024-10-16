@@ -333,8 +333,8 @@ class Retrieval():
             num_contexts (int, optional): How many paragraphs to retrieve. Defaults to 1.
 
             hnsw (bool, optional):
-                Controls whether to use Hierarchical Navigable Small Worlds (HNSW) for retrieval to find the closest article
-                to the user's query. This is an optimisation technique which makes retrieval faster.
+                Controls whether to use Hierarchical Navigable Small Worlds (HNSW) for retrieval for both articles and paragraphs.
+                This is an optimisation technique which makes retrieval faster.
 
             use_sparse_retrieval (bool, optional):
                 Controls whether to use dense or sparse retrieval to find the best Wikipedia article to answer the user's query.
