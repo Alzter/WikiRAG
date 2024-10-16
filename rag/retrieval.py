@@ -24,15 +24,15 @@ class HNSW():
     Args:
         ef (int): Controlling the recall by setting ef: higher ef leads to better accuracy, but slower search.
         ef_construction (int): Controls index search speed/build speed tradeoff.
-        space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Dot product).
+        space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Inner product / Dot product).
         num_threads (int): Set number of threads used during batch search/construction. By default this uses all available cores.
 
     """
     def __init__(self, 
-                corpus: list[Document],
-                ef: int, 
-                space = 'l2',   # 'l2' refers to the Euclidean distance
-                ef_construction = 200,
+                corpus: list[Document | Embedding],
+                ef: int = 250, 
+                space : str = 'cosine',
+                ef_construction : int = 200,
                 M = 28,
                 num_threads = 4
         ):
@@ -65,7 +65,7 @@ class HNSW():
         Declare and initialise the HNSW index.
 
         Args:
-            space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Dot product).
+            space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Inner product / Dot product).
             dim (int): Number of dimensions for each vector. NoInstruct embeddings have 384 dimensions.
             ef_construction (int): Controls index search speed/build speed tradeoff
             M (int):    Is tightly connected with internal dimensionality of the data.
@@ -239,14 +239,9 @@ class Retrieval():
         self.documents = self.get_document_summaries(corpus_path)
         self.corpus_path = corpus_path
         self.embedding_model = EmbeddingModel()
-        """
-            For search metric of HNSW, change parameter 'space':
-                'l2': Euclidean Distance
-                'cosine': Cosine
-                'ip': Inner product (Dot product)
-        """
-        self.hsnw_search = HNSW(self.documents, ef=250, space = 'cosine', num_threads=num_threads)   
 
+        self.num_threads = num_threads
+        self.hsnw_search = HNSW(self.documents, num_threads=self.num_threads)
 
     def get_document_summaries(self, corpus_path : str) -> list[Document]:
 
@@ -436,7 +431,18 @@ class Retrieval():
         num_contexts = min(num_contexts, len(embeddings))
         num_contexts = max(num_contexts, 0)
 
-        best_embeddings = DenseRetrieval.get_k_best_documents(num_contexts, query_embedding, embeddings)
+        if hnsw:
+
+            # Create a HNSW to search through all embeddings quickly.
+            corpus_hnsw_search = HNSW(corpus = embeddings, num_threads=self.num_threads)
+
+            best_embeddings = corpus_hnsw_search.get_k_best_documents(num_contexts, query_embedding)
+
+            # Free the HNSW search object from memory when we don't need it.
+            del corpus_hnsw_search
+
+        else:
+            best_embeddings = DenseRetrieval.get_k_best_documents(num_contexts, query_embedding, embeddings)
 
         if verbose: print("Context successfully retrieved.")
 
