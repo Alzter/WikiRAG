@@ -102,7 +102,7 @@ class HNSW():
         best_embedding_indices, distances = self.hnsw.knn_query(query, k)
         
         # All elements are wrapped within an additional array, so we must remove that.
-        best_embedding_indices, distances = np.squeeze(best_embedding_indices), np.squeeze(distances)
+        # best_embedding_indices, distances = np.squeeze(best_embedding_indices), np.squeeze(distances)
 
         print(f"Labels: {len(best_embedding_indices)} - Scores: {len(distances)}")
 
@@ -119,7 +119,7 @@ class HNSW():
         best_embedding_indices = k_best.get_k_best(k, best_embedding_indices, scores)
 
         # Get the embedding objects from our indices.
-        best_embeddings = [self.corpus[index] for index in best_embedding_indices]
+        best_embeddings = [self.corpus[int(index)] for index in best_embedding_indices]
 
         return best_embeddings
 
