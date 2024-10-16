@@ -20,6 +20,13 @@ class HNSW():
     Hierarchical Navigable Small World graphs (HNSW) is an algorithm that allows for 
     efficient nearest neighbor search, and the Sentence Transformers library allows for 
     the generation of semantically meaningful sentence embeddings.
+
+    Args:
+        ef (int): Controlling the recall by setting ef: higher ef leads to better accuracy, but slower search.
+        ef_construction (int): Controls index search speed/build speed tradeoff.
+        space (str): Possible options are l2, cosine or ip
+        num_threads (int): Set number of threads used during batch search/construction. By default this uses all available cores.
+
     """
     def __init__(self, 
                 corpus: list[Document],
@@ -30,6 +37,11 @@ class HNSW():
                 num_threads = 4
         ):
             
+        legal_space_values = ['l2', 'cosine', 'ip']
+
+        if not space in legal_space_values:
+            raise ValueError(f"The search space should be any of: {str(space)}")
+
         self.corpus = corpus
         self.corpus_embeddings = [document.embedding for document in corpus]
         self.dim = corpus[0].embedding.shape[-1]
@@ -40,39 +52,56 @@ class HNSW():
         self.hnsw = None
         self.generate_hnsw(
             space, 
-            num_elements=len(self.corpus_embeddings),
+            num_elements= len(self.corpus_embeddings),
             ef_construction = ef_construction,
             M = M,
             data = self.corpus_embeddings
         )
         
-    def generate_hnsw(self, space, num_elements, ef_construction, M, data):
+    def generate_hnsw(self, space, ef_construction, M, data):
+        """
+        Declare and initialise the HNSW index.
+
+        Args:
+            ef_construction (int): Controls index search speed/build speed tradeoff
+            M (int):    Is tightly connected with internal dimensionality of the data.
+                        Strongly affects the memory consumption (~M)
+\                       Higher M leads to higher ``accuracy/run_time`` at fixed ``ef/efConstruction``.
+            data (list[torch.Tensor]): The list of all document embeddings to add to the HNSW.
+
+        Returns:
+            None
+        """
         self.hnsw = hnswlib.Index(space = space, dim = self.dim)  # 'l2' refers to the Euclidean distance
         self.hnsw.set_num_threads(self.threads)
+
+        # max_elements (int):
+        #         The maximum number of elements (capacity). Will throw an exception if exceeded
+        #         during insertion of an element.
+        #
+        #         The capacity can be increased by saving/loading the index, see [this example](https://github.com/nmslib/hnswlib/blob/master/examples/python/example.py) for more details.
+            
         self.hnsw.init_index(
-            max_elements = num_elements, 
+            max_elements = len(data), 
             ef_construction = ef_construction, 
             M = M)
         
         # Add items to HNSW index
-        # for i, doc in enumerate(data):
-        #     # Convert each torch tensor to NumPy array and remove batch dimension (if necessary)
-        #     numpy_embedding = doc.squeeze(0).numpy()  # Remove batch dim [1, 384] -> [384]
-        #     # print(numpy_embedding.shape)  # Should be (384,)
-        #     # print(numpy_embedding)
-        #     self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
-        
-        for doc in data:
-            self.hnsw.add_items(doc[-1])    # Add to hnswlib
+        for i, doc in enumerate(data):
+            # Convert each torch tensor to NumPy array and remove batch dimension (if necessary)
+            numpy_embedding = doc.squeeze(0).numpy()  # Remove batch dim [1, 384] -> [384]
+            # print(numpy_embedding.shape)  # Should be (384,)
+            # print(numpy_embedding)
+            self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
 
-    @staticmethod
-    def get_scores(hnsw, query : torch.Tensor, k : int) -> list[float]:
-        labels, distances = hnsw.knn_query(query, k)
+    # @staticmethod
+    # def get_scores(hnsw, query : torch.Tensor, k : int) -> list[float]:
+    #     labels, distances = hnsw.knn_query(query, k)
 
-        print(f"Scores: {labels}")
-        print(f"Length of scores: {len(labels)}")
+    #     print(f"Scores: {labels}")
+    #     print(f"Length of scores: {len(labels)}")
 
-        return labels[0], distances
+    #     return labels[0], distances
 
     # @staticmethod
     def get_k_best_documents(self, k : int, query : torch.Tensor) -> list[Embedding]:
@@ -80,10 +109,20 @@ class HNSW():
             self.ef = k + 1 
             self.hnsw.set_ef(self.ef)  # ef should always be greater than k
         
-        scores, _ = HNSW.get_scores(self.hnsw, query, k = 10)
+        labels, distances = self.hnsw.knn_query(query, k)
+        
+        labels = np.squeeze(labels) # Remove extra array
+
+        top_k = k_best.get_k_best(k, self.corpus, distances)
+
+        matches = list(zip(labels, distances))
+
+        # scores, _ = HNSW.get_scores(self.hnsw, query, k = 10)
 
         print(f"Length of corpus: {len(self.corpus)}")
-        top_k = k_best.get_k_best(k, self.corpus, scores)
+
+        raise NotImplementedError("Work in progress, sorry :(")
+        
         return top_k
 
 class SparseRetrieval():
