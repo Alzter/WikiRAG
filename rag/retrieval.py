@@ -24,7 +24,7 @@ class HNSW():
     Args:
         ef (int): Controlling the recall by setting ef: higher ef leads to better accuracy, but slower search.
         ef_construction (int): Controls index search speed/build speed tradeoff.
-        space (str): Possible options are l2, cosine or ip
+        space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Dot product).
         num_threads (int): Set number of threads used during batch search/construction. By default this uses all available cores.
 
     """
@@ -63,6 +63,8 @@ class HNSW():
         Declare and initialise the HNSW index.
 
         Args:
+            space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Dot product).
+            dim (int): Number of dimensions for each vector. NoInstruct embeddings have 384 dimensions.
             ef_construction (int): Controls index search speed/build speed tradeoff
             M (int):    Is tightly connected with internal dimensionality of the data.
                         Strongly affects the memory consumption (~M)
@@ -74,13 +76,6 @@ class HNSW():
         """
         self.hnsw = hnswlib.Index(space = space, dim = self.dim)  # 'l2' refers to the Euclidean distance
         self.hnsw.set_num_threads(self.threads)
-
-        # max_elements (int):
-        #         The maximum number of elements (capacity). Will throw an exception if exceeded
-        #         during insertion of an element.
-        #
-        #         The capacity can be increased by saving/loading the index, see [this example](https://github.com/nmslib/hnswlib/blob/master/examples/python/example.py) for more details.
-            
         self.hnsw.init_index(
             max_elements = len(data), 
             ef_construction = ef_construction, 
@@ -94,36 +89,33 @@ class HNSW():
             # print(numpy_embedding)
             self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
 
-    # @staticmethod
-    # def get_scores(hnsw, query : torch.Tensor, k : int) -> list[float]:
-    #     labels, distances = hnsw.knn_query(query, k)
-
-    #     print(f"Scores: {labels}")
-    #     print(f"Length of scores: {len(labels)}")
-
-    #     return labels[0], distances
-
-    # @staticmethod
     def get_k_best_documents(self, k : int, query : torch.Tensor) -> list[Embedding]:
+        
+        # Ensure that ef is always greater than k.
         if self.ef <= k:
-            self.ef = k + 1 
-            self.hnsw.set_ef(self.ef)  # ef should always be greater than k
+            self.ef = k + 1
+            self.hnsw.set_ef(self.ef)
         
-        labels, distances = self.hnsw.knn_query(query, k)
+        # Use HNSW to get the indices of the closest K embeddings and their distances from the query.
+        best_embedding_indices, distances = self.hnsw.knn_query(query, k)
         
-        labels = np.squeeze(labels) # Remove extra array
+        # All elements are wrapped within an additional array, so we must remove that.
+        best_embedding_indices, distances = np.squeeze(best_embedding_indices), np.squeeze(distances)
 
-        top_k = k_best.get_k_best(k, self.corpus, distances)
+        # Normalise all distance values to a range from 0 to 1 using min-max scaling.
+        distances_normalised = (distances - distances.min()) / (distances.max() - distances.min())
 
-        matches = list(zip(labels, distances))
+        # The embedding similarity scores are the inverse of our embedding distances.
+        # I.e., the lesser distance we have, the closer we are to the query, so the greater our score.
+        scores = 1 - distances_normalised
 
-        # scores, _ = HNSW.get_scores(self.hnsw, query, k = 10)
+        # Sort the embedding indices from best to worst.
+        best_embedding_indices = k_best.get_k_best(k, best_embedding_indices, scores)
 
-        print(f"Length of corpus: {len(self.corpus)}")
+        # Get the embedding objects from our indices.
+        best_embeddings = [self.corpus[index] for index in best_embedding_indices]
 
-        raise NotImplementedError("Work in progress, sorry :(")
-        
-        return top_k
+        return best_embeddings
 
 class SparseRetrieval():
     """
