@@ -20,6 +20,13 @@ class HNSW():
     Hierarchical Navigable Small World graphs (HNSW) is an algorithm that allows for 
     efficient nearest neighbor search, and the Sentence Transformers library allows for 
     the generation of semantically meaningful sentence embeddings.
+
+    Args:
+        ef (int): Controlling the recall by setting ef: higher ef leads to better accuracy, but slower search.
+        ef_construction (int): Controls index search speed/build speed tradeoff.
+        space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Dot product).
+        num_threads (int): Set number of threads used during batch search/construction. By default this uses all available cores.
+
     """
     def __init__(self, 
                 corpus: list[Document],
@@ -30,6 +37,11 @@ class HNSW():
                 num_threads = 4
         ):
             
+        legal_space_values = ['l2', 'cosine', 'ip']
+
+        if not space in legal_space_values:
+            raise ValueError(f"The search space should be any of: {str(space)}")
+
         self.corpus = corpus
         self.corpus_embeddings = [document.embedding for document in corpus]
         self.dim = corpus[0].embedding.shape[-1]
@@ -40,17 +52,32 @@ class HNSW():
         self.hnsw = None
         self.generate_hnsw(
             space, 
-            num_elements=len(self.corpus_embeddings),
+            num_elements= len(self.corpus_embeddings),
             ef_construction = ef_construction,
             M = M,
             data = self.corpus_embeddings
         )
         
-    def generate_hnsw(self, space, num_elements, ef_construction, M, data):
+    def generate_hnsw(self, space, ef_construction, M, data):
+        """
+        Declare and initialise the HNSW index.
+
+        Args:
+            space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Dot product).
+            dim (int): Number of dimensions for each vector. NoInstruct embeddings have 384 dimensions.
+            ef_construction (int): Controls index search speed/build speed tradeoff
+            M (int):    Is tightly connected with internal dimensionality of the data.
+                        Strongly affects the memory consumption (~M)
+\                       Higher M leads to higher ``accuracy/run_time`` at fixed ``ef/efConstruction``.
+            data (list[torch.Tensor]): The list of all document embeddings to add to the HNSW.
+
+        Returns:
+            None
+        """
         self.hnsw = hnswlib.Index(space = space, dim = self.dim)  # 'l2' refers to the Euclidean distance
         self.hnsw.set_num_threads(self.threads)
         self.hnsw.init_index(
-            max_elements = num_elements, 
+            max_elements = len(data), 
             ef_construction = ef_construction, 
             M = M)
         
@@ -61,30 +88,34 @@ class HNSW():
             # print(numpy_embedding.shape)  # Should be (384,)
             # print(numpy_embedding)
             self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
-        
-        # for doc in data:
-        #     self.hnsw.add_items(doc[-1])    # Add to hnswlib
 
-    @staticmethod
-    def get_scores(hnsw, query : torch.Tensor, k : int) -> list[float]:
-        labels, distances = hnsw.knn_query(query, k)
-
-        print(f"Scores: {labels}")
-        print(f"Length of scores: {len(labels)}")
-
-        return labels[0], distances
-
-    # @staticmethod
     def get_k_best_documents(self, k : int, query : torch.Tensor) -> list[Embedding]:
-        if self.ef <= k:
-            self.ef = k + 1 
-            self.hnsw.set_ef(self.ef)  # ef should always be greater than k
         
-        scores, _ = HNSW.get_scores(self.hnsw, query, k = 1)
+        # Ensure that ef is always greater than k.
+        if self.ef <= k:
+            self.ef = k + 1
+            self.hnsw.set_ef(self.ef)
+        
+        # Use HNSW to get the indices of the closest K embeddings and their distances from the query.
+        best_embedding_indices, distances = self.hnsw.knn_query(query, k)
+        
+        # All elements are wrapped within an additional array, so we must remove that.
+        best_embedding_indices, distances = np.squeeze(best_embedding_indices), np.squeeze(distances)
 
-        print(f"Length of corpus: {len(self.corpus)}")
-        top_k = k_best.get_k_best(k, self.corpus, scores)
-        return top_k
+        # Normalise all distance values to a range from 0 to 1 using min-max scaling.
+        distances_normalised = (distances - distances.min()) / (distances.max() - distances.min())
+
+        # The embedding similarity scores are the inverse of our embedding distances.
+        # I.e., the lesser distance we have, the closer we are to the query, so the greater our score.
+        scores = 1 - distances_normalised
+
+        # Sort the embedding indices from best to worst.
+        best_embedding_indices = k_best.get_k_best(k, best_embedding_indices, scores)
+
+        # Get the embedding objects from our indices.
+        best_embeddings = [self.corpus[index] for index in best_embedding_indices]
+
+        return best_embeddings
 
 class SparseRetrieval():
     """
