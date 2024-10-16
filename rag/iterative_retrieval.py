@@ -52,17 +52,6 @@ class IterativeRetrieval:
         # Answer confidence is the inverse of this score
         return 1 - uncertainty_score
 
-    def decompose_question(self, query : str):
-        chat_history = [
-            {'role':"system",'content':Prompt.count_number_of_hops},
-            {'role':'user','content':query},
-            {'role':'assistant','content':"Fact 1: "}
-        ]
-
-        chat_history, response = self.qd.generate_response(chat_history, max_new_tokens=200)
-
-        return response
-
     def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 5, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
         """
         Answer a single-hop question by retrieving context from Wikipedia.
