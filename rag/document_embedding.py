@@ -48,6 +48,8 @@ class DocumentEmbedding(EmbeddingModel):
                 article_path (str): The folder where the embeddings were saved.
             """
 
+            if not os.path.exists(output_dir): os.makedirs(output_dir)
+            
             folder_name = self.sanitise_string(title)
             article_path = os.path.join(output_dir, folder_name)
             # print(f"Embedding article: {article_path}")
