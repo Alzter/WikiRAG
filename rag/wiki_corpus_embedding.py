@@ -197,7 +197,7 @@ class WikiCorpusEmbedding(DocumentEmbedding):
             for article in articles:
                 
                 progress_bar.update(1 / len(articles))
-                progress_bar.set_postfix_str(f"{article['title'][:10] + "..."} - Batch {batch_id + 1}/{len(batches)}")
+                progress_bar.set_postfix_str(f"{article['title'][:10]}... - Batch {batch_id + 1}/{len(batches)}")
                 progress_bar.refresh()
 
                 self.create_document_embedding(
