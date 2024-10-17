@@ -94,7 +94,7 @@ async def query_llm(query : str, max_tokens : int = 100):
     }
 
 @app.get("/query_rag/{query}")
-async def query_rag(query : str, corpus_path : str, num_threads : int = 4):
+async def query_rag(query : str, corpus_path : str = "context/knowledge_base", num_threads : int = 4):
     """
     Have the LLM respond to a question *with* RAG techniques.
     """
