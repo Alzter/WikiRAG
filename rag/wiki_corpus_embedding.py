@@ -5,15 +5,14 @@ from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
 from glob import glob
 
 import sys; sys.path.append("processor")
-from embedding_model import EmbeddingModel
+from document_embedding import DocumentEmbedding
 
 import unicodedata
 import re
 from tqdm import tqdm
 import math
-a = sys.path.append("processor")
-print("aaaaaaaaaa   ",a)
-class CorpusEmbedding(EmbeddingModel):
+
+class WikiCorpusEmbedding(DocumentEmbedding):
     """
     Class which can convert a raw-text corpus of Wikipedia into an embedding database.
     """
@@ -23,14 +22,7 @@ class CorpusEmbedding(EmbeddingModel):
         Args:
             fast (bool): If True, quantizes the embedding model. This leads to faster embedding time, but worse embeddings.
         """
-        return super().__init__(quantized=fast)
-    
-    def sanitise_string(self, input_string : str):
-            """
-            Sanitises a string to make it usable as a folder name
-            by removing all non alphanumeric and whitespace characters.
-            """
-            return re.sub(r'[^a-zA-Z0-9|\s]', '', input_string).strip()
+        return super().__init__(fast=fast)
 
     def read_input_text_files(self, files : list):
         """
@@ -94,7 +86,7 @@ class CorpusEmbedding(EmbeddingModel):
         for article in corpus:
 
             try:
-                paragraphs = article.split("\n\n")
+                paragraphs = self.chunk_text(article)
 
                 # Ignore articles which do not have body text.
                 if len(paragraphs) <= 1:
@@ -196,61 +188,17 @@ class CorpusEmbedding(EmbeddingModel):
             if not os.path.exists(output_dir): os.makedirs(output_dir)
 
             for article in articles:
-
-                title = article['title']
-                summary = article['summary']
-                paragraphs = article['paragraphs']
-
-                folder_name = self.sanitise_string(title)
-
+                
                 progress_bar.update(1 / len(articles))
-                progress_bar.set_postfix_str(f"{title} - Batch {batch_id + 1}/{len(batches)}")
+                progress_bar.set_postfix_str(f"{article['title'][:10]}... - Batch {batch_id + 1}/{len(batches)}")
                 progress_bar.refresh()
 
-                article_path = os.path.join(output_dir, folder_name)
-                # print(f"Embedding article: {article_path}")
-                
-                if not overwrite:
-                    
-                    # Ignore articles we have already saved.
-                    if os.path.exists(article_path):
-
-                        # Does the summary.txt file exist? If not, don't ignore the article.
-                        if os.path.isfile( os.path.join(article_path, "summary.txt") ):
-                                continue
-
-                if not os.path.exists(article_path): os.mkdir(article_path)
-
-                summary_file_path = os.path.join(article_path, "summary.txt")
-
-                # Write the summary file.
-                summary_file = open(summary_file_path, "wb")
-                summary_file.write(summary.encode("utf-8"))
-                summary_file.close()
-                
-                # Embed each summary using the embedding model
-                summary_embedding = self.get_embedding(summary, input_is_query=False)
-                summary_embedding_file_path = os.path.join(article_path, "summary.npy")
-
-                np.save(summary_embedding_file_path, summary_embedding, allow_pickle=True)
-
-                # Treat each paragraph as a chunk
-                for paragraph_id, paragraph in enumerate(paragraphs):
-                    
-                    # Embed each paragraph using the embedding model
-                    embedding = self.get_embedding(paragraph, input_is_query=False)
-
-                    # Save the raw text of the paragraph into a text file
-                    paragraph_raw_text_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.txt")
-                    paragraph_raw_text_file = open(paragraph_raw_text_file_path, "wb")
-                    paragraph_raw_text_file.write(paragraph.encode("utf-8"))
-                    paragraph_raw_text_file.close()
-
-                    # Save the embedding of the paragraph into a numpy file
-                    embedding_data_file_path = os.path.join(article_path, f"chunk_{paragraph_id}.npy")
-                    np.save(embedding_data_file_path, embedding, allow_pickle=True)
-
-                    # print(f"Embed paragraph {paragraph_id} for article {title}")
+                self.create_document_embedding(
+                    article['title'],
+                    article['summary'],
+                    article['paragraphs'],
+                    output_dir=output_dir,
+                    overwrite=overwrite)
 
         progress_bar.close()
 

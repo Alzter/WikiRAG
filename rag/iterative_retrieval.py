@@ -52,18 +52,7 @@ class IterativeRetrieval:
         # Answer confidence is the inverse of this score
         return 1 - uncertainty_score
 
-    def decompose_question(self, query : str):
-        chat_history = [
-            {'role':"system",'content':Prompt.count_number_of_hops},
-            {'role':'user','content':query},
-            {'role':'assistant','content':"Fact 1: "}
-        ]
-
-        chat_history, response = self.qd.generate_response(chat_history, max_new_tokens=200)
-
-        return response
-
-    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 5, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
+    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 1, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
         """
         Answer a single-hop question by retrieving context from Wikipedia.
 
@@ -242,7 +231,12 @@ class IterativeRetrieval:
         # If the assistant cannot answer the question satisfactorily as a single-hop question, try decomposing the question.
         # Extract first sub-question.
         if verbose: print(f"Decomposing question: {query}")
-        chat_history, sub_question = self.qd.decompose_question_step(query)
+
+        # Begin query decomposition using a variable QD history to keep track of its progress
+        qd_history, sub_question = self.qd.decompose_question_step(query)
+        
+        # Create a separate variable 'full chat history' to keep track of every step of the reasoning process (not just QD)
+        full_chat_history = qd_history
 
         hops = 0
 
@@ -256,48 +250,59 @@ class IterativeRetrieval:
             # Answer the first sub-question using by retrieving context from the knowleddge base.
             sub_answer, sub_answer_history, sub_answer_article = self.answer_single_hop_question(sub_question, max_attempts=max_sub_question_answer_attempts, num_chunks=num_chunks)
 
+            # Keep track of what contexts we are referencing for our answer.
             articles.append(sub_answer_article)
-            chat_history.append(sub_answer_history)
+
+            # Add the reasoning process for the LLM's sub-answer to the full chat history.
+            full_chat_history.append(sub_answer_history)
             
             # If we could not find appropriate context to answer a sub-question,
             # end the retrieval process and answer "I don't know".
             if sub_answer == "I don't know.":
-                chat_history.append({"role":"assistant", "content":"I don't know."})
-                return "I don't know.", chat_history, articles
+                full_chat_history.append({"role":"assistant", "content":"I don't know."})
+                return "I don't know.", full_chat_history, articles
             
             contexts.append(sub_answer)
 
             if verbose: print(f"Extracted answer to sub-question: {sub_answer}")
 
-            # Add the sub-answer to the chat history.
-            chat_history.append({'role': 'user', 'content': sub_answer})
+            # Add the sub-answer to the QD history *and* the full chat history.
+            qd_history.append({'role': 'user', 'content': sub_answer})
+            full_chat_history.append({'role': 'user', 'content': sub_answer})
 
             # Stop if context is sufficient to answer original question.
 
             if verbose: print("Evaluating whether contexts are sufficient to answer original query...")
-            can_answer = self.is_answer_attainable(query, contexts)
-            if can_answer:
+            can_answer, answer_evaluation = self.is_answer_attainable(query, contexts)
+
+            # Add the LLM's assessment of whether the contexts are sufficient to answer the question to the full chat history.
+            full_chat_history.append(answer_evaluation)
+
+            if can_answer == True:
                 if verbose: print("Model is confident that it can answer the original question")
                 break
 
             # Extract further sub-questions, or "That's enough" if context is sufficient
             if verbose: print(f"Decomposing question again...")
 
-            chat_history, sub_question = self.qd.decompose_question_step(chat_history)
+            qd_history, sub_question = self.qd.decompose_question_step(qd_history)
+
+            # Add only the latest sub-question to the full history.
+            full_chat_history.append(qd_history[-1])
             hops += 1
-        
+
         # If we were not able to find enough context to answer the multi-hop question, answer "I don't know".
         if hops == maximum_reasoning_steps:
-            chat_history.append({"role":"assistant", "content":"I don't know."})
-            return "I don't know.", chat_history, articles
+            full_chat_history.append({"role":"assistant", "content":"I don't know."})
+            return "I don't know.", full_chat_history, articles
 
         if verbose: print(f"Retrieved enough context to answer original question: {query}\nContext:\n{str(contexts)}")
 
         final_answer, final_answer_retrieval_process = self.answer_multi_hop_question_using_context(query, contexts, verbose = verbose)
 
-        chat_history.append(final_answer_retrieval_process)
+        full_chat_history.append(final_answer_retrieval_process)
 
-        return final_answer, chat_history, articles
+        return final_answer, full_chat_history, articles
 
 
     def answer_question(self, query : str, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):

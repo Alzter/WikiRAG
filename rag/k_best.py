@@ -16,7 +16,8 @@ def get_k_best(k : int, items : list[object], scores : list[float]):
     Returns:
         best_items (list): The list of k best items according to the highest scores.
     """
-    assert(len(items) == len(scores), "Each score must correspond to one item.")
+
+    if (len(items) != len(scores)): raise ValueError("Each score must correspond to one item.")
 
     # 0 < k <= len(items)
     k = min(k, len(items))
@@ -28,6 +29,6 @@ def get_k_best(k : int, items : list[object], scores : list[float]):
 
     #print(f"Best indices: {best_indices}")
 
-    best_items = [items[i] for i in best_indices]
+    best_items = [items[i] for i in best_indices[:len(items)]]
 
     return best_items
