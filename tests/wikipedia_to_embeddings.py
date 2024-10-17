@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from processor.corpus_embedding import CorpusEmbedding
+from processor.wiki_corpus_embedding import WikiCorpusEmbedding
 from processor.wikipedia_corpus_download import WikipediaDownload
 
 WIKIPEDIA_DOWNLOAD_PATH = "context\\wikipedia_extracted"
@@ -14,4 +14,4 @@ print(f"Downloading Wikipedia as raw text and saving to {WIKIPEDIA_DOWNLOAD_PATH
 WikipediaDownload.download_and_extract_wikipedia_dump(WIKIPEDIA_DOWNLOAD_PATH, download_subset=download_all)
 
 print(f"Embedding Wikipedia dump and saving to folder: {out_path}")
-embedding_path = CorpusEmbedding.embed_wikipedia_raw_text(WIKIPEDIA_DOWNLOAD_PATH, use_late_chunking=True)
+embedding_path = WikiCorpusEmbedding.embed_wikipedia_raw_text(WIKIPEDIA_DOWNLOAD_PATH, use_late_chunking=True)

@@ -4,7 +4,7 @@ from typing import Annotated # Better type hints library for Python (read: less 
 from fastapi import FastAPI, HTTPException, File, UploadFile
 
 from rag.wikipedia_corpus_download import WikipediaDownload
-from rag.corpus_embedding import CorpusEmbedding
+from rag.wiki_corpus_embedding import WikiCorpusEmbedding
 from rag.iterative_retrieval import IterativeRetrieval
 from rag.language_model import LLM
 
@@ -41,7 +41,7 @@ async def generate_knowledge_base(wikipedia_raw_text_path : str = "context/raw_t
     Articles are processed in batches of megabyte size ``batch_size_mb``."""
     
     # Load the embedding and tokenizer model
-    model = CorpusEmbedding()
+    model = WikiCorpusEmbedding()
 
     save_path = model.embed_wikipedia_raw_text(wikipedia_raw_text_path, output_dir=output_dir, batch_size_mb=batch_size_mb)
 
