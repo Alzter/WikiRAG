@@ -44,7 +44,7 @@ class LLM(TransformerModel):
             eos_token_id=self.tokenizer.eos_token_id,
             truncation = truncation,
             max_new_tokens=max_new_tokens,
-            continue_final_message=continue_final_message
+            # continue_final_message=continue_final_message
         )
 
         try:

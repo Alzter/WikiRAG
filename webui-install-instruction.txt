@@ -1,0 +1,52 @@
+##################################################################################
+###                     Install WebUI Front End Instruction                    ###
+################################################################################## 
+                      
+############################# Open Anaconda Prompt ###############################
+conda create -n webui python=3.11
+
+conda activate webui
+
+conda install git
+
+conda install -c conda-forge nodejs
+
+git clone https://github.com/open-webui/open-webui.git
+
+cd open-webui
+
+##################################################################################
+	- Navigate to your "open-webui" folder directory
+	- Find file named: ".env.example"
+	- Create a copy and Rename new file to ".env"
+	- Open ".env" file, in line 8:
+		- Should look like this: 
+			+ # AUTOMATIC1111_BASE_URL="http://localhost:7860"
+		- Change to your local IPv4 address:
+			+ For example: Your local IP address is: 192.168.1.13
+			+ Change to your IP address:
+			AUTOMATIC1111_BASE_URL="http://192.168.1.13:7860"
+###################################################################################
+
+npm i
+
+################################ Front End Build ##################################
+
+npm run build 
+
+########################### Install backend requirement ###########################
+
+cd backend
+
+pip install -r requirements.txt -U
+
+################################# Load Front End ##################################
+
+start_windows.bat
+
+###################################### Usage ######################################
+
+Register for new local account (Can use random name/email/password)
+
+
+

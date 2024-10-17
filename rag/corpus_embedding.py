@@ -11,7 +11,8 @@ import unicodedata
 import re
 from tqdm import tqdm
 import math
-
+a = sys.path.append("processor")
+print("aaaaaaaaaa   ",a)
 class CorpusEmbedding(EmbeddingModel):
     """
     Class which can convert a raw-text corpus of Wikipedia into an embedding database.
