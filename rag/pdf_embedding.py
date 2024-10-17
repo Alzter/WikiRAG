@@ -7,7 +7,6 @@ StreamType = IO[Any]
 StrByteType = Union[str, StreamType]
 
 import re
-from re import _FlagsType
 from tqdm import tqdm
 from pypdf import PdfReader
 
@@ -35,13 +34,13 @@ class PDFEmbedding(DocumentEmbedding):
 
         return super().__init__(fast=fast)
 
-    def extract_pdf_text(self, file : StrByteType | Path, parsers : list[tuple[str,str,_FlagsType | None]] = default_parsers):
+    def extract_pdf_text(self, file : StrByteType | Path, parsers : list[tuple[str,str,int | None]] = default_parsers):
         """
         Extract all text from an uploaded PDF file and return as a string.
 
         Args:
             file (StrByteType | Path): The PDF file given either as a string path string or a stream of bytes.
-            parsers (list[tuple[string, string, _FlagsType | None]], optional):
+            parsers (list[tuple[string, string, int | None]], optional):
                 A list of regular expression substitutions to use to parse the extracted PDF text into a usable format.
                 Each parser is used with the ``re.sub()`` function, where the items map to the arguments ``pattern``, ``repl``, and ``flags`` respectively.
         

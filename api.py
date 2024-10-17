@@ -10,6 +10,7 @@ from rag.iterative_retrieval import IterativeRetrieval
 from rag.language_model import LLM
 
 import os
+from io import BytesIO
 
 app = FastAPI()
 
@@ -66,7 +67,9 @@ async def add_pdf_to_knowledge_base(document : UploadFile, output_dir : str = "c
     if extension != "application/pdf":
         raise HTTPException(415, "Only PDF files are allowed.")
 
+    # TODO: This approach sucks because we are reading the entirety of the PDF file in one go rather than streaming it.
     pdf_contents = await document.read()
+    pdf_contents = BytesIO(pdf_contents)
 
     model = PDFEmbedding()
 

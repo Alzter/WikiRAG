@@ -23,13 +23,6 @@ class WikiCorpusEmbedding(DocumentEmbedding):
             fast (bool): If True, quantizes the embedding model. This leads to faster embedding time, but worse embeddings.
         """
         return super().__init__(fast=fast)
-    
-    def sanitise_string(self, input_string : str):
-            """
-            Sanitises a string to make it usable as a folder name
-            by removing all non alphanumeric and whitespace characters.
-            """
-            return re.sub(r'[^a-zA-Z0-9|\s]', '', input_string).strip()
 
     def read_input_text_files(self, files : list):
         """

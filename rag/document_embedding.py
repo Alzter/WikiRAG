@@ -4,6 +4,7 @@ import torch
 from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
 from glob import glob
 from embedding_model import EmbeddingModel
+import re
 
 import sys; sys.path.append("processor")
 
@@ -22,6 +23,13 @@ class DocumentEmbedding(EmbeddingModel):
 
         return text.split(delimiter)
 
+    def sanitise_string(self, input_string : str):
+            """
+            Sanitises a string to make it usable as a folder name
+            by removing all non alphanumeric and whitespace characters.
+            """
+            return re.sub(r'[^a-zA-Z0-9|\s]', '', input_string).strip()
+    
     def create_document_embedding(self, title : str, summary : str, paragraphs : list[str], output_dir : str, overwrite : bool = True):
             """
             Given a document ``title``, ``summary``, and body text ``paragraphs``, save the summary and each
