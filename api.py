@@ -94,14 +94,14 @@ async def query_llm(query : str, max_tokens : int = 100):
     }
 
 @app.get("/query_rag/{query}")
-async def query_rag(query : str, corpus_path : str = "context/knowledge_base", num_threads : int = 4):
+async def query_rag(query : str, corpus_path : str = "context/knowledge_base", num_threads : int = 5, max_sub_questions : int = 4, max_sub_q_answer_attempts : int = 1, num_contexts_per_sub_q : int = 5):
     """
     Have the LLM respond to a question *with* RAG techniques.
     """
     rag = IterativeRetrieval(corpus_path, num_threads=num_threads)
 
     # Answer the question using RAG
-    answer, chat_history, articles = rag.answer_multi_hop_question(query)
+    answer, chat_history, articles = rag.answer_multi_hop_question(query, maximum_reasoning_steps=max_sub_questions, max_sub_question_answer_attempts=max_sub_q_answer_attempts, num_chunks=num_contexts_per_sub_q)
 
     return {
         "answer" : answer,
