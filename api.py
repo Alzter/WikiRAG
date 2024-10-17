@@ -5,8 +5,11 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 
 from rag.wikipedia_corpus_download import WikipediaDownload
 from rag.wiki_corpus_embedding import WikiCorpusEmbedding
+from rag.pdf_embedding import PDFEmbedding
 from rag.iterative_retrieval import IterativeRetrieval
 from rag.language_model import LLM
+
+import os
 
 app = FastAPI()
 
@@ -49,6 +52,30 @@ async def generate_knowledge_base(wikipedia_raw_text_path : str = "context/raw_t
         "embeddings_save_path" : save_path
     }
 
+@app.post("/add_pdf_to_knowledge_base")
+async def add_pdf_to_knowledge_base(document : UploadFile, output_dir : str = "context/knowledge_base"):
+    """
+    Converts a PDF file into raw text, embeds it, and stores it within the knowledge base at ``output_dir``.
+    """
+
+    filename = document.filename
+    filename = os.path.splitext(filename)[0] # Remove the file extension from the file name.
+
+    extension = document.content_type
+
+    if extension != "application/pdf":
+        raise HTTPException(415, "Only PDF files are allowed.")
+
+    pdf_contents = await document.read()
+
+    model = PDFEmbedding()
+
+    save_path = model.embed_pdf_file(pdf_contents, filename, output_dir=output_dir)
+
+    return {
+        "embeddings_save_path" : save_path
+    }
+
 @app.get("/query/{query}")
 async def query_llm(query : str, max_tokens : int = 100):
     """
@@ -78,14 +105,3 @@ async def query_rag(query : str, corpus_path : str, num_threads : int = 4):
         "reasoning" : chat_history,
         "evidences" : articles
     }
-
-# @app.post("/preprocess_document")
-# async def preprocess_document(document : UploadFile):
-
-#     filename = document.filename
-#     extension = document.content_type
-
-#     # TODO: Raise assertion that documents must be of PDF type
-
-#     raise HTTPException(501, "Document pre-process method not yet implemented.")
-#     return {"message": "Not implemented yet"}

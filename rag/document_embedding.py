@@ -27,7 +27,7 @@ class DocumentEmbedding(EmbeddingModel):
             Given a document ``title``, ``summary``, and body text ``paragraphs``, save the summary and each
             paragraph inside a folder in ``output_dir`` with name ``title``.
 
-            All text, both summary and paragraphs, are saved as both UTF-8 encoded .txt files and as embeddings in .npy files.
+            All text, both summary and paragraphs, are saved as both UTF-8 encoded ``.txt`` files and as embeddings in ``.npy`` files.
 
             Args:
                 title (str): The title of the document.

@@ -25,7 +25,7 @@ default_parsers = [
     (r"\n+\n(?=[^\n]+\n[^\n]+\n\n)", "\n", None)
 ]
 
-class PDFCorpusEmbedding(DocumentEmbedding):
+class PDFEmbedding(DocumentEmbedding):
 
     def __init__(self, fast : bool = False):
         """
@@ -40,7 +40,7 @@ class PDFCorpusEmbedding(DocumentEmbedding):
         Extract all text from an uploaded PDF file and return as a string.
 
         Args:
-            file (StrByteType | Path): The file given either as a string path string or a stream of bytes.
+            file (StrByteType | Path): The PDF file given either as a string path string or a stream of bytes.
             parsers (list[tuple[string, string, _FlagsType | None]], optional):
                 A list of regular expression substitutions to use to parse the extracted PDF text into a usable format.
                 Each parser is used with the ``re.sub()`` function, where the items map to the arguments ``pattern``, ``repl``, and ``flags`` respectively.
@@ -68,10 +68,26 @@ class PDFCorpusEmbedding(DocumentEmbedding):
 
         return page_texts_concatenated
 
-    def pdf_to_embedding(self, file : StrByteType | Path, output_dir : str):
+    def embed_pdf_file(self, file : StrByteType | Path, file_title : str, output_dir : str, overwrite : bool = True):
         """
         Convert a PDF into embeddings and save it into the knowledge base in ``output_dir``.
+
+        Args:
+            file (StrByteType | Path): The PDF file given either as a string path string or a stream of bytes.
+            file_title: The name of the PDF file without the extension.
+            output_dir (str): The directory to create the folder where the embeddings will be saved.
+            overwrite (bool): Whether to overwrite the document embeddings if they already exist.
+
+        Returns:
+            article_path (str): The folder where the embeddings were saved.
         """
 
-        paragraphs = self.extract_pdf_text(file)
+        body_text = self.extract_pdf_text(file)
+        paragraphs = self.chunk_text(body_text)
+
+        # Extremely lazy way to summarise a PDF document - get the first 30 lines.
+        # TODO: Think of a better way to automatically generate summaries of PDF files.
+        summary = "\n".join(body_text.splitlines()[:30])
+
+        return self.create_document_embedding(title = file_title, summary=summary, paragraphs=paragraphs, output_dir=output_dir, overwrite=overwrite)
 
