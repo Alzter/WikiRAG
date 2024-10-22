@@ -1,5 +1,5 @@
 # Go to the project folder
-cd \fred/oz345/alex
+cd \/fred/oz345/alex
 
 # Load Python 3.10.4
 module load gcc/11.3.0
@@ -10,3 +10,8 @@ source team5/bin/activate
 
 # Go to the repository
 cd ProjectCSurvival
+
+# Set the Hugging Face home directory to the project folder
+python
+os.environ["HF_HOME"] = '/fred/oz345/alex/cache"
+exit()
