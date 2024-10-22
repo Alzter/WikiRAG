@@ -10,4 +10,48 @@ fastapi dev api.py
 
 ## Front-end
 
-Not implemented yet
+### Install WebUI Front End Instruction
+ 
+#### Open Anaconda Prompt
+``conda create -n webui python=3.11``
+
+``conda activate webui``
+
+``conda install git``
+
+``conda install -c conda-forge nodejs``
+
+``git clone https://github.com/open-webui/open-webui.git``
+
+``cd open-webui``
+
+ - Navigate to your "open-webui" folder directory
+ - Find file named: ".env.example"
+ - Create a copy and Rename new file to ".env"
+ - Open ".env" file, in line 8:
+ - Should look like this: 
+ - ``# AUTOMATIC1111_BASE_URL="http://localhost:7860"``
+ - Delete `#` to uncomment the line.
+
+``npm i``
+
+### Front End Build
+
+``npm run build ``
+
+#### Install backend requirement
+
+``cd backend``
+
+``pip install -r requirements.txt -U``
+
+### Load Front End
+
+``start_windows.bat``
+
+### Usage
+
+Register for new local account (Can use random name/email/password)
+
+
+
