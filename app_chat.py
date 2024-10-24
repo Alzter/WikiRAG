@@ -20,23 +20,19 @@ def chat(message, history):
     return "Dummy response"
 
 with gr.Blocks(
-    # Source: https://github.com/zylon-ai/private-gpt/issues/1377
-    title="RAG system",
-    css=".contain { display: flex !important; flex-direction: column !important; }"
-    "#component-0, #component-3, #component-10, #component-8  { height: 100% !important; }"
-    "#chatbot { flex-grow: 1 !important; overflow: auto !important;}"
-    "#col { height: 100vh !important; }"
+    title='RAG',
+    css="#col { height: 90vh !important; }",
+    fill_height=True
 ) as ui:
 
     with gr.Row(equal_height=False):
-        
         # Settings Panel
         with gr.Column(scale=3) as settings_ui:
             with gr.Blocks():
                 upload_btn = gr.UploadButton(label="Upload Context as PDF")
 
         # Chat Panel
-        with gr.Column(scale=7):
+        with gr.Column(scale=7, elem_id='col'):
             _ = gr.ChatInterface(
                 fn = chat,
                 multimodal=False,
