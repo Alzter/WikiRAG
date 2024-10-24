@@ -28,7 +28,7 @@ with gr.Blocks(
     "#col { height: 100vh !important; }"
 ) as ui:
 
-    with gr.Row(equal_height=True):
+    with gr.Row(equal_height=False):
         
         # Settings Panel
         with gr.Column(scale=3) as settings_ui:
