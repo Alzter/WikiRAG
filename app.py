@@ -1,60 +1,57 @@
 import gradio as gr
-from rag.iterative_retrieval import IterativeRetrieval
+#from rag.iterative_retrieval import IterativeRetrieval
+import os
 
+def get_knowledge_bases_in_dir(kb_directory):
+    return os.listdir(kb_directory)
 
-# from rag.iterative_retrieval import IterativeRetrieval as rag
+KB_PATH = 'context'
+knowledge_bases = get_knowledge_bases_in_dir(KB_PATH)
 
-def __init__(corpus_path, num_threads : int = 5):
-    rag = IterativeRetrieval(corpus_path, num_threads=num_threads)
+state = {}
 
+def set_state(key, value):
+    state[key] = value
 
-def history_to_chat_template(history : list[list], message : str = None) -> list[dict]:
-    """
-    Convert the simple history into a
-    [Chat Template](https://huggingface.co/docs/transformers/v4.45.1/en/chat_templating).
+def get_state(key):
+    return state.get(key)
+
+with gr.Blocks() as kb_picker:
     
-    Args:
-        history (list[list]): The chat history as a list of 2-item lists,
-                               where each tuple is: [user message, bot message].
-        message (str, optional):
-                              The user's current message. This is added to the end of the chat history.
-    
-    Returns:
-        chat_history (list[dict]): The history in chat template form.
-    """
+    gr.Markdown(
+        """
+        #COS30018 - RAG System
 
-    chat_history = []
-    for item in history:
-        user_msg, assistant_msg = item
+        Created by Matt, Alex, and Toan.
+        """
+    )
 
-        chat_history.append({
-            "role":"user","content":user_msg
-        })
-        chat_history.append({
-            "role":"assistant","content":assistant_msg
-        })
-    
-    if message is not None:
-        chat_history.append({
-            "role":"user","content":message
-        })
-    
-    return chat_history
+    with gr.Blocks():
+        gr.Markdown("""
+        ## Select or create a Knowledge Base:
+        """)
 
-def chat(message, history):
-    chat_history = history_to_chat_template(history, message=message)
+        with gr.Row():
+            kb_create_button = gr.Button("Create Knowledge Base")
+            kb_open_button = gr.Button("Open Knowledge Base")
 
-    if hasattr(self, "rag"):
-        rag.llm
+    kb_open_button.click(
+        fn =set_state,
+        inputs=["kb_select", "open"],
+        outputs=None
+    )
 
+    kb_dropdown = gr.Dropdown(
+        choices=knowledge_bases,
+        label="Knowledge Base",
+        info="Select a knowledge base to use:",
+        visible = get_state("kb_select") == "open"
+    )
 
-def chat_rag(message, history):
-    chat_history = history_to_chat_template(history, message=message)
+kb_picker.launch()
 
-    return "Hi"
+#chat_ui = gr.ChatInterface(
+#    chat_rag
+#)
 
-chat_ui = gr.ChatInterface(
-    chat_rag
-)
-
-chat_ui.launch()
+#chat_ui.launch()
