@@ -16,3 +16,4 @@ openai==1.52.0
 spacy==3.7.6
 tiktoken==0.7.0
 chromadb==0.5.15
+gradio==5.3.0
