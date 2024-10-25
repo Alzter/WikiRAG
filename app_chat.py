@@ -67,7 +67,7 @@ def chat(message, history):
     print(max_tokens)
     print(rag_params)
 
-    return rag_params
+    return str(rag_params)
 
     # chat_fn = chat_rag if use_rag else chat_no_rag
     # return chat_fn(message, history, max_tokens, **rag_params)
@@ -101,7 +101,7 @@ with gr.Blocks(
     with gr.Row(equal_height=False):
 
         # Settings Panel
-        with gr.Column(scale=3, elem_id='col') as settings_ui:
+        with gr.Column(scale=3) as settings_ui:
             
             max_tokens = gr.Slider(10, 1000, value=get_state('max_tokens'), label="Max Tokens")
             max_tokens.change(lambda value : set_state("max_tokens", value), max_tokens)
@@ -120,23 +120,25 @@ with gr.Blocks(
                 max_paragraphs = gr.Number(value=get_state("rag_num_chunks"), minimum=1, maximum=10, label="Maximum Paragraphs Per Sub-Question")
                 max_paragraphs.change(lambda value : set_state("rag_num_chunks", int(value)), max_paragraphs)
 
-                kb_selector = gr.Dropdown(get_state("knowledge_bases"), label="Knowledge Base", info="Select a Knowledge Base")
                 
-                # with gr.Accordion("Create New Knowledge Base"):
-                #     new_kb_name = gr.Textbox(label="Name")
+            with gr.Accordion("Knowledge Base Settings"):
+                kb_selector = gr.Dropdown(get_state("knowledge_bases"), label="Knowledge Base")
+            
+                upload_btn = gr.UploadButton(label="Upload Context as PDF", file_types=['.pdf'])
+                upload_btn.upload(upload_pdf_to_kb, upload_btn)
+
+                with gr.Accordion("Download Wikipedia to Knowledge Base"):
+                    wiki_subset_mb = gr.Slider(0, wikipedia_dump_size_mb,  label="Wikipedia Data To Download (mb)")
+
+                    download_btn = gr.Button("Download Wikipedia to Knowledge Base")
+
+            
+
+            with gr.Accordion("Create new Knowledge Base"):
+                new_kb_name = gr.Textbox(label="Name")
                     
-                #     new_kb_create_button = gr.Button("Create Knowledge Base")
-                #     new_kb_create_button.click(create_kb, new_kb_name)
-                
-                # upload_btn = gr.UploadButton(label="Upload Context as PDF", file_types=['.pdf'])
-                # upload_btn.upload(upload_pdf_to_kb, upload_btn)
-
-                # with gr.Accordion("Download Wikipedia to Knowledge Base"):
-                #     wiki_subset_mb = gr.Slider(0, wikipedia_dump_size_mb, label="Megabytes To Download")
-
-                #     download_btn = gr.Button("Download Wikipedia to Knowledge Base")
-
-                pass
+                new_kb_create_button = gr.Button("Create")
+                new_kb_create_button.click(create_kb, new_kb_name)
 
         # Chat Panel
         with gr.Column(scale=7, elem_id='col'):
