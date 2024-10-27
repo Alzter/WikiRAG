@@ -157,17 +157,17 @@ with gr.Blocks(
         # Settings Panel
         with gr.Column(scale=3) as settings_ui:
             
-            max_tokens = gr.Slider(10, 1000, value=100, label="Max Tokens")
+            max_tokens = gr.Slider(10, 1000, value=100, step=1, label="Max Tokens")
             
             use_rag = gr.Checkbox(label="Use RAG", value=False)
 
             with gr.Accordion("RAG Settings", open=False):
                 
-                max_sub_qs = gr.Number(value=5, minimum=1, maximum=10, label="Maximum Sub Questions")
+                max_sub_qs = gr.Slider(value=5, minimum=1, maximum=10, step=1, label="Maximum Sub-Questions", info="How many times shall the RAG be allowed to decompose the user question into smaller sub-questions?")
                
-                max_articles = gr.Number(value=2, minimum=1, maximum=10, label="Maximum Answer Attempts Per Sub-Question")
+                max_articles = gr.Slider(value=2, minimum=1, maximum=10, step=1, label="Maximum Answer Attempts Per Sub-Question", info="During each answer attempt, the RAG will fetch a different document to answer the sub-question.")
 
-                max_paragraphs = gr.Number(value=3, minimum=1, maximum=10, label="Maximum Paragraphs Per Sub-Question")
+                max_paragraphs = gr.Slider(value=3, minimum=1, maximum=10, step=1, label="Number of Paragraphs Per Article", info="How many paragraphs should be retrieved for each document during the sub-question answer attempt?")
 
                 
             with gr.Accordion("Knowledge Base Settings", open=False):
