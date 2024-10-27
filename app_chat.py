@@ -102,15 +102,23 @@ def download_wikipedia_to_kb(
 
 upload_pdf = PDFEmbedding()
 
-async def upload_pdf_to_kb(pdf_file, knowledge_base):
-    filename = pdf_file.name
+def upload_pdf_to_kb(pdf_file, knowledge_base):
+    filepath = pdf_file.name
     file = open(pdf_file.name, 'rb')
-    filename = os.path.splitext(filename)[0] # Remove the file extension from the file name.
+    filename = os.path.splitext(os.path.split(filepath)[-1])[0] # Get only the name of the file w/o extensions.
     
     output_dir = os.path.join(KB_PATH, knowledge_base)
+
+    gr.Info(f"Uploading PDF {filename} to Knowledge Base {knowledge_base}")
     
     # Add the PDF to the knowledge base
-    await upload_pdf.embed_pdf_file(file, pdf_file.name, output_dir=output_dir)
+    upload_pdf.embed_pdf_file(file, filename, output_dir=output_dir)
+
+def pdf_success(pdf_name, knowledge_base):
+    filename = os.path.splitext(os.path.split(pdf_name)[-1])[0] # Get only the name of the file w/o extensions.
+    gr.Info(f"Successfully added PDF {filename} to Knowledge Base {knowledge_base}")
+
+    return select_kb(knowledge_base)
 
 # from rag.iterative_retrieval import IterativeRetrieval
 # KB_PATH = "context/sonic" # TOOD: Add a selector interface to create this.
@@ -187,7 +195,7 @@ with gr.Blocks(
                 kb_selector.change(select_kb, kb_selector, kb_article_count)
             
                 upload_btn = gr.UploadButton(label="Upload Context as PDF", file_types=['.pdf'])
-                upload_btn.upload(upload_pdf_to_kb, inputs = [upload_btn, kb_selector]).success(lambda name, kb : gr.Info("Successfully added PDF {name} to Knowledge Base {kb}"), inputs=[upload_btn, kb_selector])
+                upload_btn.upload(upload_pdf_to_kb, inputs = [upload_btn, kb_selector]).success(pdf_success, inputs=[upload_btn, kb_selector], outputs=[kb_article_count])
 
                 with gr.Accordion("Download Wikipedia to Knowledge Base"):
                     wiki_subset_mb = gr.Slider(5, wikipedia_dump_size_mb,  label="Wikipedia Data To Download (mb)")
