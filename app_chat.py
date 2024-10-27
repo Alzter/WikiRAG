@@ -19,7 +19,7 @@ except Exception: pass
 # ====================================================================
 # State variables
 
-def get_knowledge_bases(path : KB_PATH): return os.listdir(path)
+def get_knowledge_bases(path = KB_PATH): return os.listdir(path)
 
 # Initial State.
 state = {
