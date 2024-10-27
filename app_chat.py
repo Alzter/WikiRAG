@@ -17,34 +17,18 @@ try:
 except Exception: pass
 
 # ====================================================================
-# State variables
-
-def get_knowledge_bases(path = KB_PATH): return os.listdir(path)
-
-# Initial State.
-state = {
-    'knowledge_bases' : get_knowledge_bases(),
-    'knowledge_base' : get_knowledge_bases()[0],
-    'rag_enabled' : True,
-    'max_tokens' : 100,
-    'rag_max_sub_qs' : 5,
-    'rag_max_articles' : 2,
-    'rag_num_chunks' : 1
-}
-
-print(os.listdir(KB_PATH))
-
-def set_state(variable, value):
-    state[variable] = value
-    gr.Info(str(state))
-def get_state(variable, default = None): return state.get(variable) if variable in state.keys() else default
-
-def update_knowledge_bases(): set_state('knowledge_bases', get_knowledge_bases())
-
-# ====================================================================
-
-# ====================================================================
 # Utility Methods
+
+def get_knowledge_bases(path = KB_PATH):
+    return os.listdir(path)
+
+def get_kb_path(kb_name):
+    return os.path.join(KB_PATH, kb_name)
+
+def get_num_contexts_for_kb(kb_name):
+    return len(
+        os.listdir(get_kb_path(kb_name))
+    )
 
 import re
 def sanitise_string(input_string : str):
@@ -53,6 +37,11 @@ def sanitise_string(input_string : str):
         by removing all non alphanumeric and whitespace characters.
         """
         return re.sub(r'[^a-zA-Z0-9|\s]', '', input_string).strip()
+
+def select_kb(name):
+    if not os.path.exists(get_kb_path(name)): raise FileNotFoundError(f"Knowledge base {name} not found at path {get_kb_path(name)}")
+
+    return f"{get_num_contexts_for_kb(name)} articles"
 
 # Create a knowledge base with name 'name'
 def create_kb(name):
@@ -68,46 +57,78 @@ def create_kb(name):
     
     os.makedirs(kb_dir)
 
-    set_state('knowledge_base', name)
-    set_state('knowledge_bases', os.listdir(KB_PATH))
-
     return name
+
+def update_kb_selector(new_kb_name : str):
+    """
+    Called when user creates a new KB.
+    """
+    new_kb_name = sanitise_string(new_kb_name)
+    gr.Info(f"Knowledge base created: {new_kb_name}")
+    return gr.Dropdown(choices = get_knowledge_bases(), value=new_kb_name)
+
+
+from rag.wikipedia_corpus_download import WikipediaDownload
+from rag.wiki_corpus_embedding import WikiCorpusEmbedding
+import shutil
+wikipedia_embedding_model = WikiCorpusEmbedding()
+
+def download_wikipedia_to_kb(
+        wiki_subset_size_mb:int,
+        knowledge_base_name : str,
+        dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2',
+        cache_dir : str = "cache/wikipedia_raw",
+        subfile_max_size_megabytes : int = 10,
+        embedding_batch_size_mb : int = 50
+    ):
+
+    output_dir = get_kb_path(knowledge_base_name)
+
+    """
+    Download a Wikipedia dump of size ``wiki_subset_size_mb``, convert it to raw text, embed it, and store it into the knowledge base.
+    """
+
+    gr.Info(f"Downloading {wiki_subset_size_mb}MB of Wikipedia to Knowledge Base {knowledge_base_name}, please wait...")
+
+    save_path = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=cache_dir, subfile_max_megabytes = subfile_max_size_megabytes, max_megabytes=wiki_subset_size_mb, dump_url=dump_url)
+
+    # Load the embedding and tokenizer model
+
+    save_path = wikipedia_embedding_model.embed_wikipedia_raw_text(cache_dir, output_dir=output_dir, batch_size_mb=embedding_batch_size_mb)
+
+    shutil.rmtree(cache_dir)
+
+    return save_path
 
 upload_pdf = PDFEmbedding()
 
-async def upload_pdf_to_kb(pdf_file, event: gr.EventData, progress = gr.Progress()):
+async def upload_pdf_to_kb(pdf_file, knowledge_base):
     filename = pdf_file.name
     file = open(pdf_file.name, 'rb')
     filename = os.path.splitext(filename)[0] # Remove the file extension from the file name.
     
-    output_dir = os.path.join(KB_PATH, get_state('knowledge_base'))
-
-    pdf_contents = BytesIO(pdf_file)
+    output_dir = os.path.join(KB_PATH, knowledge_base)
     
     # Add the PDF to the knowledge base
-    await upload_pdf.embed_pdf_file(pdf_contents, pdf_file.name, output_dir=output_dir)
+    await upload_pdf.embed_pdf_file(file, pdf_file.name, output_dir=output_dir)
 
 # from rag.iterative_retrieval import IterativeRetrieval
 # KB_PATH = "context/sonic" # TOOD: Add a selector interface to create this.
 # rag = IterativeRetrieval(KB_PATH) # Create the RAG model.
 
-def chat(message, history):
-    use_rag = get_state("rag_enabled", False)
+def chat(message, history, max_tokens, use_rag, rag_max_sub_qs, rag_max_articles, rag_num_chunks):
+    gr.Info(str(use_rag))
 
-    max_tokens = int(get_state("max_tokens", 100))
+    max_tokens = int(round(max_tokens))
 
     # max_new_tokens : int = 100, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1
 
     rag_params = {
-        "maximum_reasoning_steps" : get_state("rag_max_sub_qs"),
-        "max_sub_question_answer_attempts" : get_state("rag_max_articles"),
-        "num_chunks" : get_state("rag_num_chunks")
+        "maximum_reasoning_steps" : rag_max_sub_qs,
+        "max_sub_question_answer_attempts" : rag_max_articles,
+        "num_chunks" : rag_num_chunks
 
     }
-
-    print(use_rag)
-    print(max_tokens)
-    print(rag_params)
 
     return str(rag_params)
 
@@ -132,12 +153,6 @@ def chat(message, history):
 #     return response
 # ====================================================================
 
-def update_knowledge_base(new_kb_name : str):
-    new_kb_name = sanitise_string(new_kb_name)
-    gr.Info(f"Knowledge base created: {new_kb_name}")
-    update_knowledge_bases()
-    return gr.Dropdown.update(choices = get_state('knowledge_bases'), value=new_kb_name)
-
 # UI
 
 with gr.Blocks(
@@ -152,48 +167,48 @@ with gr.Blocks(
         # Settings Panel
         with gr.Column(scale=3) as settings_ui:
             
-            max_tokens = gr.Slider(10, 1000, value=get_state('max_tokens'), label="Max Tokens")
-            max_tokens.change(lambda value : set_state("max_tokens", value), max_tokens)
-
-            use_rag = gr.Checkbox(label="Use RAG", value=get_state('rag_enabled'))
-            use_rag.select(lambda value : set_state("rag_enabled", value), use_rag)
+            max_tokens = gr.Slider(10, 1000, value=100, label="Max Tokens")
+            
+            use_rag = gr.Checkbox(label="Use RAG", value=False)
 
             with gr.Accordion("RAG Settings", open=False):
                 
-                max_sub_qs = gr.Number(value=get_state("rag_max_sub_qs"), minimum=1, maximum=10, label="Maximum Sub Questions")
-                max_sub_qs.change(lambda value : set_state("rag_max_sub_qs", int(value)), max_sub_qs)
+                max_sub_qs = gr.Number(value=5, minimum=1, maximum=10, label="Maximum Sub Questions")
                
-                max_articles = gr.Number(value=get_state("rag_max_articles"), minimum=1, maximum=10, label="Maximum Answer Attempts Per Sub-Question")
-                max_articles.change(lambda value : set_state("rag_max_articles", int(value)), max_articles)
+                max_articles = gr.Number(value=2, minimum=1, maximum=10, label="Maximum Answer Attempts Per Sub-Question")
 
-                max_paragraphs = gr.Number(value=get_state("rag_num_chunks"), minimum=1, maximum=10, label="Maximum Paragraphs Per Sub-Question")
-                max_paragraphs.change(lambda value : set_state("rag_num_chunks", int(value)), max_paragraphs)
+                max_paragraphs = gr.Number(value=3, minimum=1, maximum=10, label="Maximum Paragraphs Per Sub-Question")
 
                 
             with gr.Accordion("Knowledge Base Settings", open=False):
-                kb_selector = gr.Dropdown(get_state("knowledge_bases"), value=get_state("knowledge_base"), label="Knowledge Base")
+                kb_selector = gr.Dropdown(get_knowledge_bases(), label="Knowledge Base")
 
-                kb_selector.change(lambda value : set_state("knowledge_base", value), kb_selector)
+                kb_article_count = gr.Textbox(f"{get_num_contexts_for_kb(kb_selector.value)} articles", label="Number of articles:")
+                kb_selector.change(select_kb, kb_selector, kb_article_count)
             
                 upload_btn = gr.UploadButton(label="Upload Context as PDF", file_types=['.pdf'])
-                upload_btn.upload(upload_pdf_to_kb, upload_btn)
+                upload_btn.upload(upload_pdf_to_kb, inputs = [upload_btn, kb_selector]).success(lambda name, kb : gr.Info("Successfully added PDF {name} to Knowledge Base {kb}"), inputs=[upload_btn, kb_selector])
 
                 with gr.Accordion("Download Wikipedia to Knowledge Base"):
-                    wiki_subset_mb = gr.Slider(0, wikipedia_dump_size_mb,  label="Wikipedia Data To Download (mb)")
+                    wiki_subset_mb = gr.Slider(5, wikipedia_dump_size_mb,  label="Wikipedia Data To Download (mb)")
 
                     download_btn = gr.Button("Download Wikipedia to Knowledge Base")
 
+                    download_btn.click(download_wikipedia_to_kb, inputs = [wiki_subset_mb, kb_selector]).success(
+                        lambda mb, kb: gr.Info(f"Successfully downloaded {mb}MB of Wikipedia to Knowledge Base {kb}."), inputs=[wiki_subset_mb, kb_selector]
+                    )
             
             with gr.Accordion("Create new Knowledge Base", open=False):
                 new_kb_name = gr.Textbox(label="Name")
                 
                 new_kb_create_button = gr.Button("Create")
-                new_kb_create_button.click(create_kb, new_kb_name).success(update_knowledge_base, inputs=new_kb_name, outputs=kb_selector)
+                new_kb_create_button.click(create_kb, new_kb_name).success(update_kb_selector, inputs=new_kb_name, outputs=kb_selector)
 
         # Chat Panel
         with gr.Column(scale=7, elem_id='col'):
             _ = gr.ChatInterface(
                 fn = chat,
+                additional_inputs=[max_tokens, use_rag, max_sub_qs, max_articles, max_paragraphs],
                 multimodal=False,
                 type='messages',
                 fill_height=True
