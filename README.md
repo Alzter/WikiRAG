@@ -1,57 +1,68 @@
-# ProjectCSurvival
-COS30018 - Project C - Team 5 GitHub Repo
+# COS30018 Project C - Team 5 GitHub Repo
+
+**Project C Survival**
+
+Maintained by:
+- Alex
+- Matt
+- Toan
+
+# Installation
+Create a Python virtual environment using Python 3.10.4
+
+`git clone` the repository and`cd` into the project repository directory.
+Then install the dependencies with:
+```bash
+pip install -r requirements.txt
+```
+
+# Deployment
+
+## Front-end (User Interface)
+
+`cd` to the project repository and activate your Python virtual environment.
+You may then run the front-end with Gradio locally using: the command
+```bash
+python app.py
+```
 
 ## API
 
-Run the API using the code:
-```
+Run the API with the command:
+```bash
 fastapi dev api.py
 ```
 
-## Front-end
+# Supercomputer Usage (OZstar)
 
-### Install WebUI Front End Instruction
- 
-#### Open Anaconda Prompt
-``conda create -n webui python=3.11``
+Here is a brief guide for how to use the project on the OZstar supercomputer.
 
-``conda activate webui``
+1. `cd` to the project folder.
+```bash
+cd \/fred/oz345/alex
+```
 
-``conda install git``
+2. Load Python 3.10.4.
+```bash
+module load gcc/11.3.0
+module load python/3.10.4
+```
 
-``conda install -c conda-forge nodejs``
+3. Activate the virtual environment.
+```bash
+source team5/bin/activate
+```
 
-``git clone https://github.com/open-webui/open-webui.git``
+4. `cd` to the project repository.
+```bash
+cd \/fred/oz345/alex/ProjectCSurvival
+```
 
-``cd open-webui``
+5. Set the Hugging Face home directory to the project folder.
 
- - Navigate to your "open-webui" folder directory
- - Find file named: ".env.example"
- - Create a copy and Rename new file to ".env"
- - Open ".env" file, in line 8:
- - Should look like this: 
- - ``# AUTOMATIC1111_BASE_URL="http://localhost:7860"``
- - Delete `#` to uncomment the line.
-
-``npm i``
-
-### Front End Build
-
-``npm run build ``
-
-#### Install backend requirement
-
-``cd backend``
-
-``pip install -r requirements.txt -U``
-
-### Load Front End
-
-``start_windows.bat``
-
-### Usage
-
-Register for new local account (Can use random name/email/password)
-
-
-
+NOTE: We're having issues getting this bit to work.
+```bash
+python
+os.environ["HF_HOME"] = "/fred/oz345/alex/cache"
+exit()
+```
