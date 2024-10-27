@@ -1,14 +1,16 @@
 import gradio as gr
 import os, requests
+from io import BytesIO
+from rag.pdf_embedding import PDFEmbedding
 
+# Configuration
+KB_PATH = 'context'
+WIKIPEDIA_DUMP_URL = "https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2"
 
-
-kb_path = 'context'
-wikipedia_dump_url = "https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2"
-
+# Get the size of the latest English Wikipedia dump in megabytes.
 wikipedia_dump_size_mb = None
 try:
-    metadata = requests.head(wikipedia_dump_url)
+    metadata = requests.head(WIKIPEDIA_DUMP_URL)
     wikipedia_dump_size_mb = metadata.headers["content-length"]
     wikipedia_dump_size_mb = int(wikipedia_dump_size_mb)
     wikipedia_dump_size_mb // 1_000_000
@@ -17,9 +19,12 @@ except Exception: pass
 # ====================================================================
 # State variables
 
+def get_knowledge_bases(path : KB_PATH): return os.listdir(path)
+
 # Initial State.
 state = {
-    'knowledge_bases' : os.listdir(kb_path),
+    'knowledge_bases' : get_knowledge_bases(),
+    'knowledge_base' : get_knowledge_bases()[0],
     'rag_enabled' : True,
     'max_tokens' : 100,
     'rag_max_sub_qs' : 5,
@@ -27,23 +32,60 @@ state = {
     'rag_num_chunks' : 1
 }
 
-print(os.listdir(kb_path))
+print(os.listdir(KB_PATH))
 
 def set_state(variable, value):
     state[variable] = value
-    print(state)
+    gr.Info(str(state))
 def get_state(variable, default = None): return state.get(variable) if variable in state.keys() else default
+
+def update_knowledge_bases(): set_state('knowledge_bases', get_knowledge_bases())
+
 # ====================================================================
 
 # ====================================================================
 # Utility Methods
 
-def create_kb(name):
-    print(f"NEW KB {name}")
+import re
+def sanitise_string(input_string : str):
+        """
+        Sanitises a string to make it usable as a folder name
+        by removing all non alphanumeric and whitespace characters.
+        """
+        return re.sub(r'[^a-zA-Z0-9|\s]', '', input_string).strip()
 
-def upload_pdf_to_kb(pdf_file, event: gr.EventData):
+# Create a knowledge base with name 'name'
+def create_kb(name):
+    kb_dir = os.path.join(KB_PATH, name)
+
+    name = sanitise_string(name)
+
+    if name == "":
+        raise ValueError("Name must be provided")
+    
+    if os.path.exists(kb_dir):
+        raise FileExistsError(f"Knowledge base {name} already exists")
+    
+    os.makedirs(kb_dir)
+
+    set_state('knowledge_base', name)
+    set_state('knowledge_bases', os.listdir(KB_PATH))
+
+    return name
+
+upload_pdf = PDFEmbedding()
+
+async def upload_pdf_to_kb(pdf_file, event: gr.EventData, progress = gr.Progress()):
+    filename = pdf_file.name
     file = open(pdf_file.name, 'rb')
-    print(file)
+    filename = os.path.splitext(filename)[0] # Remove the file extension from the file name.
+    
+    output_dir = os.path.join(KB_PATH, get_state('knowledge_base'))
+
+    pdf_contents = BytesIO(pdf_file)
+    
+    # Add the PDF to the knowledge base
+    await upload_pdf.embed_pdf_file(pdf_contents, pdf_file.name, output_dir=output_dir)
 
 # from rag.iterative_retrieval import IterativeRetrieval
 # KB_PATH = "context/sonic" # TOOD: Add a selector interface to create this.
@@ -90,9 +132,16 @@ def chat(message, history):
 #     return response
 # ====================================================================
 
+def update_knowledge_base(new_kb_name : str):
+    new_kb_name = sanitise_string(new_kb_name)
+    gr.Info(f"Knowledge base created: {new_kb_name}")
+    update_knowledge_bases()
+    return gr.Dropdown.update(choices = get_state('knowledge_bases'), value=new_kb_name)
+
 # UI
 
 with gr.Blocks(
+    theme="citrus",
     title='RAG',
     css="#col { height: 90vh !important; }",
     fill_height=True
@@ -109,7 +158,7 @@ with gr.Blocks(
             use_rag = gr.Checkbox(label="Use RAG", value=get_state('rag_enabled'))
             use_rag.select(lambda value : set_state("rag_enabled", value), use_rag)
 
-            with gr.Accordion("RAG Settings"):
+            with gr.Accordion("RAG Settings", open=False):
                 
                 max_sub_qs = gr.Number(value=get_state("rag_max_sub_qs"), minimum=1, maximum=10, label="Maximum Sub Questions")
                 max_sub_qs.change(lambda value : set_state("rag_max_sub_qs", int(value)), max_sub_qs)
@@ -121,8 +170,10 @@ with gr.Blocks(
                 max_paragraphs.change(lambda value : set_state("rag_num_chunks", int(value)), max_paragraphs)
 
                 
-            with gr.Accordion("Knowledge Base Settings"):
-                kb_selector = gr.Dropdown(get_state("knowledge_bases"), label="Knowledge Base")
+            with gr.Accordion("Knowledge Base Settings", open=False):
+                kb_selector = gr.Dropdown(get_state("knowledge_bases"), value=get_state("knowledge_base"), label="Knowledge Base")
+
+                kb_selector.change(lambda value : set_state("knowledge_base", value), kb_selector)
             
                 upload_btn = gr.UploadButton(label="Upload Context as PDF", file_types=['.pdf'])
                 upload_btn.upload(upload_pdf_to_kb, upload_btn)
@@ -133,12 +184,11 @@ with gr.Blocks(
                     download_btn = gr.Button("Download Wikipedia to Knowledge Base")
 
             
-
-            with gr.Accordion("Create new Knowledge Base"):
+            with gr.Accordion("Create new Knowledge Base", open=False):
                 new_kb_name = gr.Textbox(label="Name")
-                    
+                
                 new_kb_create_button = gr.Button("Create")
-                new_kb_create_button.click(create_kb, new_kb_name)
+                new_kb_create_button.click(create_kb, new_kb_name).success(update_knowledge_base, inputs=new_kb_name, outputs=kb_selector)
 
         # Chat Panel
         with gr.Column(scale=7, elem_id='col'):
@@ -149,4 +199,4 @@ with gr.Blocks(
                 fill_height=True
             )
 
-ui.launch()
+ui.launch(show_error=True)

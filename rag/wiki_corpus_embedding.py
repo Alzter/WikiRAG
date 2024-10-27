@@ -4,7 +4,7 @@ import torch
 from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
 from glob import glob
 
-import sys; sys.path.append("processor")
+import sys; sys.path.append("rag")
 from document_embedding import DocumentEmbedding
 
 import unicodedata

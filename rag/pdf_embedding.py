@@ -1,4 +1,4 @@
-import sys; sys.path.append("processor")
+import sys; sys.path.append("rag")
 from document_embedding import DocumentEmbedding
 
 from typing import Union, IO, Any
