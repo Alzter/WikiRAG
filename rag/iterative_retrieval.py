@@ -6,10 +6,19 @@ import re
 
 class IterativeRetrieval:
 
-    def __init__(self, corpus_path : str, num_threads=4):
+    def __init__(self, corpus_path : str | None, num_threads=4):
         print("Loading RAG model...")
         self.retriever = Retrieval(corpus_path, num_threads=num_threads)
         self.qd = QueryDecomposer()
+
+    def load_corpus(self, corpus_path : str):
+        """
+        Replace the current Knowledge Base with a new one.
+        
+        Args:
+            corpus_path (str): The filepath of the new corpus.
+        """
+        self.retriever.__init__(corpus_path, num_threads=self.retriever.num_threads)
 
     def evaluate_similarity(self, sentence_a, sentence_b):
         """
