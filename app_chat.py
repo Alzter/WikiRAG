@@ -1,20 +1,10 @@
 import gradio as gr
-import os, requests
+import os, glob
 from io import BytesIO
 from rag.pdf_embedding import PDFEmbedding
 
 # Configuration
 KB_PATH = 'context'
-WIKIPEDIA_DUMP_URL = "https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2"
-
-# Get the size of the latest English Wikipedia dump in megabytes.
-wikipedia_dump_size_mb = None
-try:
-    metadata = requests.head(WIKIPEDIA_DUMP_URL)
-    wikipedia_dump_size_mb = metadata.headers["content-length"]
-    wikipedia_dump_size_mb = int(wikipedia_dump_size_mb)
-    wikipedia_dump_size_mb // 1_000_000
-except Exception: pass
 
 # ====================================================================
 # Utility Methods
@@ -23,12 +13,14 @@ def get_knowledge_bases(path = KB_PATH):
     return os.listdir(path)
 
 def get_kb_path(kb_name):
-    return os.path.join(KB_PATH, kb_name)
+    path = os.path.join(KB_PATH, kb_name)
+    if not os.path.exists(path): raise FileNotFoundError(f"Knowledge base {kb_name} not found at path {path}")
+    return path
 
 def get_num_contexts_for_kb(kb_name):
-    return len(
-        os.listdir(get_kb_path(kb_name))
-    )
+    summary_files = glob.glob(f"{get_kb_path(kb_name)}/*/summary.txt")
+
+    return len(summary_files)
 
 import re
 def sanitise_string(input_string : str):
@@ -66,39 +58,6 @@ def update_kb_selector(new_kb_name : str):
     new_kb_name = sanitise_string(new_kb_name)
     gr.Info(f"Knowledge base created: {new_kb_name}")
     return gr.Dropdown(choices = get_knowledge_bases(), value=new_kb_name)
-
-
-from rag.wikipedia_corpus_download import WikipediaDownload
-from rag.wiki_corpus_embedding import WikiCorpusEmbedding
-import shutil
-wikipedia_embedding_model = WikiCorpusEmbedding()
-
-def download_wikipedia_to_kb(
-        wiki_subset_size_mb:int,
-        knowledge_base_name : str,
-        dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2',
-        cache_dir : str = "cache/wikipedia_raw",
-        subfile_max_size_megabytes : int = 10,
-        embedding_batch_size_mb : int = 50
-    ):
-
-    output_dir = get_kb_path(knowledge_base_name)
-
-    """
-    Download a Wikipedia dump of size ``wiki_subset_size_mb``, convert it to raw text, embed it, and store it into the knowledge base.
-    """
-
-    gr.Info(f"Downloading {wiki_subset_size_mb}MB of Wikipedia to Knowledge Base {knowledge_base_name}, please wait...")
-
-    save_path = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=cache_dir, subfile_max_megabytes = subfile_max_size_megabytes, max_megabytes=wiki_subset_size_mb, dump_url=dump_url)
-
-    # Load the embedding and tokenizer model
-
-    save_path = wikipedia_embedding_model.embed_wikipedia_raw_text(cache_dir, output_dir=output_dir, batch_size_mb=embedding_batch_size_mb)
-
-    shutil.rmtree(cache_dir)
-
-    return save_path
 
 upload_pdf = PDFEmbedding()
 
@@ -196,15 +155,6 @@ with gr.Blocks(
             
                 upload_btn = gr.UploadButton(label="Upload Context as PDF", file_types=['.pdf'])
                 upload_btn.upload(upload_pdf_to_kb, inputs = [upload_btn, kb_selector]).success(pdf_success, inputs=[upload_btn, kb_selector], outputs=[kb_article_count])
-
-                with gr.Accordion("Download Wikipedia to Knowledge Base"):
-                    wiki_subset_mb = gr.Slider(5, wikipedia_dump_size_mb,  label="Wikipedia Data To Download (mb)")
-
-                    download_btn = gr.Button("Download Wikipedia to Knowledge Base")
-
-                    download_btn.click(download_wikipedia_to_kb, inputs = [wiki_subset_mb, kb_selector]).success(
-                        lambda mb, kb: gr.Info(f"Successfully downloaded {mb}MB of Wikipedia to Knowledge Base {kb}."), inputs=[wiki_subset_mb, kb_selector]
-                    )
             
             with gr.Accordion("Create new Knowledge Base", open=False):
                 new_kb_name = gr.Textbox(label="Name")
