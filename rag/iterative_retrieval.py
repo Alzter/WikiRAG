@@ -1,3 +1,4 @@
+import sys; sys.path.append("rag") # Fix import errors if we try to run this script from the base directory.
 from query_decomposer import QueryDecomposer
 from retrieval import Retrieval, DenseRetrieval
 from model_prompts import Prompt
@@ -5,10 +6,19 @@ import re
 
 class IterativeRetrieval:
 
-    def __init__(self, corpus_path : str, num_threads=4):
+    def __init__(self, corpus_path : str | None, num_threads=4):
         print("Loading RAG model...")
         self.retriever = Retrieval(corpus_path, num_threads=num_threads)
         self.qd = QueryDecomposer()
+
+    def load_corpus(self, corpus_path : str):
+        """
+        Replace the current Knowledge Base with a new one.
+        
+        Args:
+            corpus_path (str): The filepath of the new corpus.
+        """
+        self.retriever.__init__(corpus_path, num_threads=self.retriever.num_threads)
 
     def evaluate_similarity(self, sentence_a, sentence_b):
         """
@@ -52,12 +62,13 @@ class IterativeRetrieval:
         # Answer confidence is the inverse of this score
         return 1 - uncertainty_score
 
-    def answer_single_hop_question(self, query : str, num_chunks : int = 1, max_attempts : int = 1, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
+    def answer_single_hop_question(self, query : str, max_new_tokens : int = 50, num_chunks : int = 1, max_attempts : int = 1, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
         """
         Answer a single-hop question by retrieving context from Wikipedia.
 
         Args:
             query (str): The single-hop question to answer.
+            max_new_tokens (int): The word limit for the LLM's response.
             num_chunks (int, optional):
                 How many paragraphs to retrieve from each Wikipedia article to use as context.
                 
@@ -107,7 +118,7 @@ class IterativeRetrieval:
             if verbose: print(f"Attempting to answer question using context: {context}")
 
             # Attempt to answer the question using the retrieved context.
-            answer, sub_q_chat_history = self.qd.answer_question_using_context(query, context, use_chain_of_thought=use_chain_of_thought)
+            answer, sub_q_chat_history = self.qd.answer_question_using_context(query, context, use_chain_of_thought=use_chain_of_thought, max_tokens=max_new_tokens)
 
             chat_history.append(sub_q_chat_history)
             
@@ -157,13 +168,14 @@ class IterativeRetrieval:
 
         return question_is_answerable, chat_history
     
-    def answer_multi_hop_question_using_context(self, query : str, contexts : list[str], verbose : bool = False):
+    def answer_multi_hop_question_using_context(self, query : str, contexts : list[str], max_new_tokens : int = 100, verbose : bool = False):
         """
         Answer a given multi-hop question after context has already been provided for it.
         
         Args:
             query (str): The original multi-hop question.
             contexts (list[str]): A list of retrieved contexts for the question.
+            max_new_tokens (int): The word limit for the LLM's response.
         
         Returns:
             final_answer (str): A concise answer to the original question,
@@ -195,18 +207,19 @@ class IterativeRetrieval:
         ]
 
         if verbose: print(f"Generated concise answer: {answer_concise}")
-        simplification_history, answer_concise = self.qd.generate_response(simplification_history, max_new_tokens=100)
+        simplification_history, answer_concise = self.qd.generate_response(simplification_history, max_new_tokens=max_new_tokens)
 
         chat_history = reasoning_history.copy().append(simplification_history)
 
         return answer_concise, chat_history
 
-    def answer_multi_hop_question(self, query : str, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
+    def answer_multi_hop_question(self, query : str, max_new_tokens : int = 100, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
         """
         Answer a multi-hop question using iterative retrieval.
 
         Args:
             query (str): The user's query.
+            max_new_tokens (int): The word limit for the LLM's response.
             maximum_reasoning_steps (int): 
                 How many steps of iterative reasoning (AKA 'hops') the model may make to answer the query.
 
@@ -298,52 +311,53 @@ class IterativeRetrieval:
 
         if verbose: print(f"Retrieved enough context to answer original question: {query}\nContext:\n{str(contexts)}")
 
-        final_answer, final_answer_retrieval_process = self.answer_multi_hop_question_using_context(query, contexts, verbose = verbose)
+        final_answer, final_answer_retrieval_process = self.answer_multi_hop_question_using_context(query, contexts, max_new_tokens=max_new_tokens, verbose = verbose)
 
         full_chat_history.append(final_answer_retrieval_process)
 
         return final_answer, full_chat_history, articles
 
+    # TODO: Make this suck less.
+    # def answer_question(self, query : str, max_new_tokens=100, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
+    #     """
+    #     Answer a multi-hop question by first trying to answer as a single-hop, then using iterative retrieval if answer was not found.
 
-    def answer_question(self, query : str, maximum_reasoning_steps : int = 5, max_sub_question_answer_attempts : int = 1, num_chunks : int = 1, verbose : bool = True):
-        """
-        Answer a multi-hop question by first trying to answer as a single-hop, then using iterative retrieval if answer was not found.
+    #     Args:
+    #         query (str): The user's query.
+    #         max_new_tokens (int): The word limit for the LLM's response.
+    #         maximum_reasoning_steps (int): 
+    #             How many steps of iterative reasoning (AKA 'hops') the model may make to answer the query.
 
-        Args:
-            query (str): The user's query.
-            maximum_reasoning_steps (int): 
-                How many steps of iterative reasoning (AKA 'hops') the model may make to answer the query.
-
-                E.g., 2 maximum reasoning steps means the model can solve 2-hop questions.
-            max_sub_question_answer_attempts (int):
-                How many attempts the model may make at answering each sub-question using retrieved contexts.
-                If the model fails to answer any sub-question, the model will end the retrieval process and answer "I don't know".
-            num_chunks (int, optional):
-                How many paragraphs to retrieve from each Wikipedia article to use as context.
+    #             E.g., 2 maximum reasoning steps means the model can solve 2-hop questions.
+    #         max_sub_question_answer_attempts (int):
+    #             How many attempts the model may make at answering each sub-question using retrieved contexts.
+    #             If the model fails to answer any sub-question, the model will end the retrieval process and answer "I don't know".
+    #         num_chunks (int, optional):
+    #             How many paragraphs to retrieve from each Wikipedia article to use as context.
                 
-                More context chunks result in higher answer accuracy, but greater answer latency.
+    #             More context chunks result in higher answer accuracy, but greater answer latency.
 
-                Defaults to 1.
-            verbose (bool, optional): If true, prints the answering process to the console.
+    #             Defaults to 1.
+    #         verbose (bool, optional): If true, prints the answering process to the console.
 
-        Returns:
-            answer (str): The answer to the question, or "I don't know" if the model could not answer.
-            chat_history (list[dict]): The LLM's reasoning process history which was used to acquire the final answer.
-            articles (list[str]): The names of all articles used as contexts for the answer.
-        """
+    #     Returns:
+    #         answer (str): The answer to the question, or "I don't know" if the model could not answer.
+    #         chat_history (list[dict]): The LLM's reasoning process history which was used to acquire the final answer.
+    #         articles (list[str]): The names of all articles used as contexts for the answer.
+    #     """
 
-        # Attempt to first answer the question as a single-hop question.
-        if verbose: print("Attempting to answer the question directly:")
-        attempt_answer, attempt_answer_reasoning, attempt_answer_article = self.answer_single_hop_question(query, num_chunks=3, max_attempts=1, use_sparse_retrieval=False, use_chain_of_thought=False)
-        attempt_answer_confidence = self.evaluate_answer_confidence(attempt_answer)
+    #     # Attempt to first answer the question as a single-hop question.
+    #     if verbose: print("Attempting to answer the question directly:")
+    #     attempt_answer, attempt_answer_reasoning, attempt_answer_article = self.answer_single_hop_question(query, num_chunks=3, max_attempts=1, max_new_tokens=max_new_tokens, use_sparse_retrieval=False, use_chain_of_thought=False)
+    #     attempt_answer_confidence = self.evaluate_answer_confidence(attempt_answer)
 
-        if verbose: print(f"Attempted answer: {attempt_answer}")
-        if verbose: print(f"attempt_answer_confidence: {attempt_answer_confidence}")
+    #     if verbose: print(f"Attempted answer: {attempt_answer}")
+    #     if verbose: print(f"attempt_answer_confidence: {attempt_answer_confidence}")
 
-        if attempt_answer_confidence > 0.1:
-            if verbose: print(f"Model believes attempted answer is correct.")
-            return attempt_answer, attempt_answer_reasoning, attempt_answer_article
+    #     if attempt_answer_confidence > 0.1:
+    #         if verbose: print(f"Model believes attempted answer is correct.")
+    #         return attempt_answer, attempt_answer_reasoning, attempt_answer_article
         
-        # If this fails, answer the question using iterative reasoning.
-        if verbose: print(f"Attempted answer is not sufficient to answer question.")
-        return self.answer_multi_hop_question(query, maximum_reasoning_steps, max_sub_question_answer_attempts, num_chunks, verbose)
+    #     # If this fails, answer the question using iterative reasoning.
+    #     if verbose: print(f"Attempted answer is not sufficient to answer question.")
+    #     return self.answer_multi_hop_question(query, max_new_tokens=max_new_tokens, maximum_reasoning_steps=maximum_reasoning_steps, max_sub_question_answer_attempts=max_sub_question_answer_attempts, num_chunks=num_chunks, verbose=verbose)

@@ -6,6 +6,7 @@ from rank_bm25 import BM25Okapi
 import torch
 from tqdm import tqdm
 import hnswlib
+import warnings
 
 class Document():
     def __init__(self, title : str, summary : str, embedding : torch.Tensor):
@@ -225,26 +226,32 @@ class DenseRetrieval():
         return top_k
 
 class Retrieval():
-    def __init__(self, corpus_path : str, num_threads : int = 4):
+    def __init__(self, corpus_path : str | None, num_threads : int = 4):
         
-        print("Searching for files in knowledge...")
+        self.num_threads = num_threads
+
+        if corpus_path is None:
+            self.corpus_path = None
+            return
+
+        print("Searching for files in knowledge base...")
         
         if not os.path.exists(corpus_path):
             raise FileNotFoundError(f"Corpus path not found: {corpus_path}")
         
         if len(glob.glob(corpus_path + "/*/summary.txt")) == 0:
-            raise LookupError(f"No documents found in corpus. Corpus path: {corpus_path}")
+            warnings.warn(f"No documents found in corpus. Corpus path: {corpus_path}")
+            self.corpus_path = None
+            return
 
         print(f"Loading knowledge base from path '{corpus_path}'...")
         self.documents = self.get_document_summaries(corpus_path)
         self.corpus_path = corpus_path
         self.embedding_model = EmbeddingModel()
 
-        self.num_threads = num_threads
         self.hsnw_search = HNSW(self.documents, num_threads=self.num_threads)
 
     def get_document_summaries(self, corpus_path : str) -> list[Document]:
-
         """
         Given a corpus of documents, extract the document summaries for all documents into a data structure.
         """
@@ -289,6 +296,8 @@ class Retrieval():
         If document_name == None, load *all* embeddings.
         """
 
+        if self.corpus_path is None: raise LookupError("Knowledge base not loaded. Please load a knowledge base.")
+        
         embeddings = []
 
         if document_name == None:
@@ -360,6 +369,7 @@ class Retrieval():
 
         """
         
+        if self.corpus_path is None: raise LookupError("Knowledge base not loaded. Please load a knowledge base.")
         if verbose: print("Embedding user query for dense retrieval:")
 
         # Convert query into an embedding

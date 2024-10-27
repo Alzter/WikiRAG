@@ -6,7 +6,7 @@ from glob import glob
 from embedding_model import EmbeddingModel
 import re
 
-import sys; sys.path.append("processor")
+import sys; sys.path.append("rag")
 
 class DocumentEmbedding(EmbeddingModel):
     def __init__(self, fast : bool = False):
