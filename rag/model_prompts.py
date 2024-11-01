@@ -103,6 +103,7 @@ Forget all knowledge you've learned before and decompose the user's question bas
 To make it easier for the user to answer, only ask one simple question at a time.
 You can only decompose the question, do not answer it directly.
 Only write one sentence for your answer containing a simple question.
+Do not ask questions similar to previous questions you have asked.
 
 ## Examples:
     User: What is the award that the director of film Wearing Velvet Slippers Under A Golden Umbrella won?
