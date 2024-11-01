@@ -17,18 +17,21 @@ def get_k_best(k : int, items : list[object], scores : list[float]):
         best_items (list): The list of k best items according to the highest scores.
     """
 
-    if (len(items) != len(scores)): raise ValueError("Each score must correspond to one item.")
+    items = np.array(items); scores = np.array(scores)
 
-    # 0 < k <= len(items)
-    k = min(k, len(items))
+    if (items.size != scores.size): raise ValueError("Each score must correspond to one item.")
+
+    # 0 < k <= items.size
+    k = min(k, items.size)
     k = max(k, 0)
 
-    # Get the indices of the highest k elements in descending order
-
-    best_indices = np.argsort(scores)[-k:][::-1]
-
-    #print(f"Best indices: {best_indices}")
-
-    best_items = [items[i] for i in best_indices[:len(items)]]
-
-    return best_items
+    if items.size > 1:
+        # Get the indices of the highest k elements in descending order
+        # print(f"Best indices: {best_indices}")
+        best_indices = np.argsort(scores)[-k:][::-1]
+        best_items = [items[i] for i in best_indices]
+        return best_items
+    
+    else:
+        # No use sorting if we only have one item.
+        return np.array([items]) # Wrap it in another array so that the array is 1D instead of 0D and is therefore indexable.

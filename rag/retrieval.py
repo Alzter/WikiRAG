@@ -102,8 +102,14 @@ class HNSW():
         # Use HNSW to get the indices of the closest K embeddings and their distances from the query.
         best_embedding_indices, distances = self.hnsw.knn_query(query, k)
         
+        best_embedding_indices = best_embedding_indices.squeeze()
+        distances = distances.squeeze()
+
         # Normalise all distance values to a range from 0 to 1 using min-max scaling.
-        distances_normalised = (distances - distances.min()) / (distances.max() - distances.min())
+        # NOTE: Don't do this if all distances are identical or we only have 1 item, or else we'd divide by 0 and this returns NaN.
+        if (distances.max() - distances.min() != 0):
+            distances_normalised = (distances - distances.min()) / (distances.max() - distances.min())
+        else: distances_normalised = distances
 
         # The embedding similarity scores are the inverse of our embedding distances.
         # I.e., the lesser distance we have, the closer we are to the query, so the greater our score.
@@ -416,7 +422,7 @@ class Retrieval():
 
             # Get the best article from the list of retrieved articles.
             for candidate_article in best_articles:
-                print(f"Candidate title: {candidate_article.title}")
+                if verbose: print(f"Candidate title: {candidate_article.title}")
                 # Do not include articles in the ignore list.
                 if candidate_article.title in ignored_articles: continue
                 
