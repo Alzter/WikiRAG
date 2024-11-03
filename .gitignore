@@ -1,4 +1,6 @@
 context/*
+cache
+cache/*
 
 tests/citation_fix.ipynb
 
