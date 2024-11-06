@@ -26,6 +26,9 @@ class HNSW():
         ef (int): Controlling the recall by setting ef: higher ef leads to better accuracy, but slower search.
         ef_construction (int): Controls index search speed/build speed tradeoff.
         space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Inner product / Dot product).
+        M (int):    Is tightly connected with internal dimensionality of the data.
+                    Strongly affects the memory consumption (~M)
+\                       Higher M leads to higher ``accuracy/run_time`` at fixed ``ef/efConstruction``.
         num_threads (int): Set number of threads used during batch search/construction. By default this uses all available cores.
 
     """
@@ -68,6 +71,7 @@ class HNSW():
         Args:
             space (str): Document search method. Possible options are **l2** (Euclidean distance), **cosine** (Cosine similarity) or **ip** (Inner product / Dot product).
             dim (int): Number of dimensions for each vector. NoInstruct embeddings have 384 dimensions.
+            num_elements (int): The maximum number of vectors allowed in the HNSW network.
             ef_construction (int): Controls index search speed/build speed tradeoff
             M (int):    Is tightly connected with internal dimensionality of the data.
                         Strongly affects the memory consumption (~M)
@@ -92,7 +96,7 @@ class HNSW():
             # print(numpy_embedding)
             self.hnsw.add_items(numpy_embedding, i)  # Add to hnswlib with index 'i'
 
-    def get_k_best_documents(self, k : int, query : torch.Tensor) -> list[Embedding]:
+    def get_k_best_documents(self, k : int, query : torch.Tensor) -> list[Document | Embedding]:
         
         # Ensure that ef is always greater than k.
         if self.ef <= k:
@@ -171,7 +175,7 @@ class SparseRetrieval():
             corpus (list[Document]): ["Hello there good man!", "It is quite windy in London", "How is the weather today?"]
 
         Returns:
-            top_k (list[str]): The k most matching items in the corpus. E.g., ['It is quite windy in London']
+            top_k (list[Document]): The k most matching items in the corpus. E.g., ['It is quite windy in London']
         """
 
         scores = SparseRetrieval.get_scores(query, corpus)
@@ -212,7 +216,7 @@ class DenseRetrieval():
         return scores
     
     @staticmethod
-    def get_k_best_documents(k : int, query : torch.Tensor, corpus : list[Embedding]) -> list[Embedding]:
+    def get_k_best_documents(k : int, query : torch.Tensor, corpus : list[Document | Embedding]) -> list[Document | Embedding]:
         """
         Given an input query, retrieve k most similar embeddings from the corpus
         using dense retrieval (cosine similarity of embeddings) in descending order of similarity.
@@ -220,10 +224,10 @@ class DenseRetrieval():
         Args:
             n (int): The number of documents to retrieve. E.g., 1.
             query (torch.Tensor):
-            corpus (list[Embedding]):
+            corpus (list[Document | Embedding]):
 
         Returns:
-            top_k (list[Embedding]): The k most matching items in the corpus.
+            top_k (list[Document | Embedding]): The k most matching items in the corpus.
         """
 
         scores = DenseRetrieval.get_scores(query, corpus)

@@ -62,7 +62,7 @@ class IterativeRetrieval:
         # Answer confidence is the inverse of this score
         return 1 - uncertainty_score
 
-    def answer_single_hop_question(self, query : str, max_new_tokens : int = 50, num_chunks : int = 1, max_attempts : int = 1, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> str:
+    def answer_single_hop_question(self, query : str, max_new_tokens : int = 50, num_chunks : int = 1, max_attempts : int = 1, use_sparse_retrieval : bool = False, exhaustive_retrieval : bool = False, use_chain_of_thought : bool = False, verbose : bool = True) -> tuple[str, list[dict[str,str]], str]:
         """
         Answer a single-hop question by retrieving context from Wikipedia.
 

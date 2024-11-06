@@ -9,7 +9,7 @@ import re
 import sys; sys.path.append("rag")
 
 class DocumentEmbedding(EmbeddingModel):
-    def __init__(self, fast : bool = False):
+    def __init__(self, fast : bool = False) -> None:
         """
         Args:
             fast (bool): If True, quantizes the embedding model. This leads to faster embedding time, but worse embeddings.
