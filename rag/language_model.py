@@ -19,7 +19,7 @@ class LLM(TransformerModel):
             device_map="auto",
         )
     
-    def generate_response(self, input : str | list, max_new_tokens : int, truncation : bool = True, continue_final_message : bool = False):
+    def generate_response(self, input : str | list, max_new_tokens : int, truncation : bool = True):
         """
         Generate a response to the user's query.
 
@@ -27,7 +27,6 @@ class LLM(TransformerModel):
             input (str/list): Can either be a direct input of data type ``str``, or a chat history of type ``list``.
             max_tokens (int): The maximum number of tokens the LLM is allowed to generate for the response.
             truncation (bool, optional): Whether to force the generated text to be of length max_new_tokens by cutting it off.
-            continue_final_message (bool, optional):
             This indicates that you want the model to continue the last message in the input chat rather than starting a new one, allowing you to "prefill" its response.
             By default this is ``True`` when the final message in the input chat has the assistant role and ``False`` otherwise, but you can manually override that behaviour by setting this flag.
         
