@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_k_best(k : int, items : list[object], scores : list[float]):
+def get_k_best(k : int, items : list[object], scores : list[float]) -> list[object]:
     """
     Given an array of items and a corresponding array of scalar item scores,
     return k items which have the highest corresponding scores in descending order.
