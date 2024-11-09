@@ -9,8 +9,11 @@ KB_PATH = 'context'
 # ====================================================================
 # Load RAG
 
-from rag.iterative_retrieval import IterativeRetrieval
-rag = IterativeRetrieval(None) # Create the RAG model.
+if __name__ == "__main__":
+    from rag.iterative_retrieval import IterativeRetrieval
+
+    print("Loading RAG model from app.py")
+    rag = IterativeRetrieval(None) # Create the RAG model.
 
 # ====================================================================
 # Utility Methods
@@ -194,5 +197,3 @@ with gr.Blocks(
                 type='messages',
                 fill_height=True
             )
-
-ui.launch(show_error=True)

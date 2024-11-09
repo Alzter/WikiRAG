@@ -20,11 +20,14 @@ from rag.language_model import LLM
 
 
 class HaluEval():
-    def __init__(self, kb_path : str, max_tokens : int = 100, quantized = True):
-        from rag.iterative_retrieval import IterativeRetrieval
-        self.rag = IterativeRetrieval(kb_path, quantized=quantized)
+    def __init__(self, kb_path : str, max_tokens : int = 100, use_rag = True, quantized = True):
 
-        self.llm = LLM(quantized=quantized)
+        if use_rag:
+            from rag.iterative_retrieval import IterativeRetrieval
+            self.rag = IterativeRetrieval(kb_path, quantized=quantized)
+
+        else:
+            self.llm = LLM(quantized=quantized)
 
         self.max_tokens = max_tokens
 
@@ -332,5 +335,5 @@ if __name__ == '__main__':
 
     output_file = os.path.join(args.output, f"{args.task}_{'rag' if args.rag == True else 'llm'}_results.json")
 
-    eval = HaluEval(kb_path=args.kbpath, quantized=args.quantized)
+    eval = HaluEval(kb_path=args.kbpath, quantized=args.quantized, use_rag=args.rag)
     correct, incorrect = eval.evaluate(task=args.task, use_rag = args.rag, output_filepath=output_file)
