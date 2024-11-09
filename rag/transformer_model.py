@@ -18,10 +18,13 @@ class TransformerModel(ABC):
 
         if self.device == 'cpu': print("No GPU found: using CPU for model.")
 
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=quantized,
-            bnb_4bit_compute_dtype=torch.bfloat16# if quantized else None
-        )
+        if self.device == 'cuda':
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=quantized,
+                bnb_4bit_compute_dtype=torch.bfloat16# if quantized else None
+            )
+        else:
+            quantization_config = None
 
         print(f"Loading transformer model and tokenizer from transformers library: {model_name}\nPlease wait...\n")
 

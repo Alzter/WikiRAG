@@ -333,4 +333,4 @@ if __name__ == '__main__':
     output_file = os.path.join(args.output, f"{args.task}_{'rag' if args.rag == True else 'llm'}_results.json")
 
     eval = HaluEval(kb_path=args.kbpath, quantized=args.quantized)
-    correct, incorrect = eval.evaluate(task=args.task, use_rag = args.rag, output_path=output_file)
+    correct, incorrect = eval.evaluate(task=args.task, use_rag = args.rag, output_filepath=output_file)

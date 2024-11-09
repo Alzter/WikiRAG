@@ -4,6 +4,9 @@ cache/*
 
 tests/citation_fix.ipynb
 
+# Don't add your personal token to the GitHub (security issue)
+rag/hf_token.txt
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

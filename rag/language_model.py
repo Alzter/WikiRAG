@@ -2,19 +2,30 @@
 import torch
 from transformer_model import TransformerModel
 import transformers
+import os
 
 class LLM(TransformerModel):
     """
     Class which can generate text using an LLM.
+
+    NOTE: You will need a Hugging Face token to use Meta Llama 3.1 8B.
+
     """
 
     def __init__(self, model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct", causal = True, quantized = True, use_gpu = True):
+        
+        # hf_token = None
+        # if os.path.exists(hf_token_path):
+        #     with open(hf_token_path, "r", encoding="utf-8") as token_file:
+        #         hf_token = token_file.read().strip()
+
         super().__init__(model_name, causal, quantized, use_gpu)
 
         self.pipeline = transformers.pipeline(
             "text-generation",
             model=self.model,
             tokenizer=self.tokenizer,
+            token=os.getenv('HF_TOKEN'),
             torch_dtype=torch.float16,
             device_map="auto",
         )
