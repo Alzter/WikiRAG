@@ -3,63 +3,108 @@ from typing import Annotated # Better type hints library for Python (read: less 
 
 from fastapi import FastAPI, HTTPException, File, UploadFile
 
-from processor.wikipedia_corpus_download import WikipediaDownload
-from processor.corpus_embedding import CorpusEmbedding
+from rag.wikipedia_corpus_download import WikipediaDownload
+from rag.wiki_corpus_embedding import WikiCorpusEmbedding
+from rag.pdf_embedding import PDFEmbedding
+from rag.iterative_retrieval import IterativeRetrieval
+from rag.language_model import LLM
+
+import os
+from io import BytesIO
 
 app = FastAPI()
 
 @app.get("/download_wikipedia_dump/")
-async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/wikipedia", download_subset:bool = False):
+async def download_wikipedia_dump(dump_url : str = 'https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2', output_dir : str = "context/raw_text", subfile_max_size_megabytes : int = 10, megabyte_limit:int|None = None):
     """
     Download a Wikipedia dump, convert it to raw text, and save it to ``output_dir``.
     """
 
-    save_path = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=output_dir, dump_url=dump_url, download_subset=download_subset)
+    save_path = WikipediaDownload.download_and_extract_wikipedia_dump(output_dir=output_dir, subfile_max_megabytes = subfile_max_size_megabytes, max_megabytes=megabyte_limit, dump_url=dump_url)
 
     return {
         "dump_save_path" : save_path
     }
 
-@app.get("/extract_raw_text_from_wikipedia/")
-async def extract_raw_text_from_wikipedia_dump(dump_file_path : str, output_dir : str = "context/wikipedia", is_subset:bool = False):
-    """
-    Extract raw text from a Wikipedia dump using WikiExtractor and save it to ``output_dir``.
-    """
+# @app.get("/extract_raw_text_from_wikipedia/")
+# async def extract_raw_text_from_wikipedia_dump(dump_file_path : str, output_dir : str = "context/wikipedia", is_subset:bool = False):
+#     """
+#     Extract raw text from a Wikipedia dump using WikiExtractor and save it to ``output_dir``.
+#     """
 
-    save_path = WikipediaDownload.extract_wikipedia_dump(dump_file_path, output_dir=output_dir, is_subset=is_subset)
+#     save_path = WikipediaDownload.extract_wikipedia_dump(dump_file_path, output_dir=output_dir, is_subset=is_subset)
 
-    return {
-        "extracted_save_path" : save_path
-    }
+#     return {
+#         "extracted_save_path" : save_path
+#     }
 
-@app.get("/raw_text_corpus_to_embeddings/")
-async def raw_text_corpus_to_embeddings(corpus_path : str = "context/wikipedia", output_dir : str = "context/embeddings", embedding_model : str = "jinaai/jina-embeddings-v2-base-en", use_model_quantization : bool = False, use_late_chunking : bool = False):
-    """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``."""
+@app.get("/generate_knowledge_base/")
+async def generate_knowledge_base(wikipedia_raw_text_path : str = "context/raw_text", output_dir : str = "context/knowledge_base", batch_size_mb : int = 50):
+    """Converts a raw text knowledge corpus into a NumPy array of chunked embeddings and saves the resulting array to ``output_dir``.
+    
+    Articles are processed in batches of megabyte size ``batch_size_mb``."""
     
     # Load the embedding and tokenizer model
-    model = CorpusEmbedding()
+    model = WikiCorpusEmbedding()
 
-    save_path = model.corpus_to_embeddings(corpus_path, output_dir, use_late_chunking=use_late_chunking)
+    save_path = model.embed_wikipedia_raw_text(wikipedia_raw_text_path, output_dir=output_dir, batch_size_mb=batch_size_mb)
 
     return {
         "embeddings_save_path" : save_path
     }
 
-@app.get("/query_rag/{query}")
-async def query_rag(query):
+@app.post("/add_pdf_to_knowledge_base")
+async def add_pdf_to_knowledge_base(document : UploadFile, output_dir : str = "context/knowledge_base"):
+    """
+    Converts a PDF file into raw text, embeds it, and stores it within the knowledge base at ``output_dir``.
+    """
 
-    # TODO: Just draw the f--- owl
+    filename = document.filename
+    filename = os.path.splitext(filename)[0] # Remove the file extension from the file name.
+
+    extension = document.content_type
+
+    if extension != "application/pdf":
+        raise HTTPException(415, "Only PDF files are allowed.")
+
+    # TODO: This approach sucks because we are reading the entirety of the PDF file in one go rather than streaming it.
+    pdf_contents = await document.read()
+    pdf_contents = BytesIO(pdf_contents)
+
+    model = PDFEmbedding()
+
+    save_path = model.embed_pdf_file(pdf_contents, filename, output_dir=output_dir)
+
+    return {
+        "embeddings_save_path" : save_path
+    }
+
+@app.get("/query/{query}")
+async def query_llm(query : str, max_tokens : int = 100):
+    """
+    Have the LLM respond to a question *without* using RAG techniques.
+    """
+    llm = LLM()
+
+    chat_history, answer = llm.generate_response(input=query, max_new_tokens=max_tokens, truncate=True)
     
-    raise HTTPException(501, "RAG query method not yet implemented.")
-    return {"response": f"Not implemented yet: {query}"}
+    return {
+        "answer" : answer,
+        "reasoning" : chat_history
+    }
 
-# @app.post("/preprocess_document")
-# async def preprocess_document(document : UploadFile):
+@app.get("/query_rag/{query}")
+async def query_rag(query : str, corpus_path : str = "context/knowledge_base", num_threads : int = 5, max_sub_questions : int = 4, max_sub_q_answer_attempts : int = 1, num_contexts_per_sub_q : int = 5):
+    """
+    Have the LLM respond to a question *with* RAG techniques.
+    """
+    rag = IterativeRetrieval(corpus_path, num_threads=num_threads)
 
-#     filename = document.filename
-#     extension = document.content_type
+    # Answer the question using RAG
+    answer, chat_history, articles = rag.answer_multi_hop_question(query, maximum_reasoning_steps=max_sub_questions, max_sub_question_answer_attempts=max_sub_q_answer_attempts, num_chunks=num_contexts_per_sub_q)
 
-#     # TODO: Raise assertion that documents must be of PDF type
-
-#     raise HTTPException(501, "Document pre-process method not yet implemented.")
-#     return {"message": "Not implemented yet"}
+    return {
+        "answer" : answer,
+        "reasoning" : chat_history,
+        "evidences" : articles
+    }
