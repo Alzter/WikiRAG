@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from abc import ABC
+import os
 
 class TransformerModel(ABC):
     """
@@ -30,7 +31,7 @@ class TransformerModel(ABC):
 
         model_method = AutoModelForCausalLM if causal else AutoModel
         
-        self.model = model_method.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config)
+        self.model = model_method.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config, token=os.getenv('HF_TOKEN'))
         
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config, token=os.getenv('HF_TOKEN'))
     

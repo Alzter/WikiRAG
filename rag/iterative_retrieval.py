@@ -361,3 +361,6 @@ class IterativeRetrieval:
     #     # If this fails, answer the question using iterative reasoning.
     #     if verbose: print(f"Attempted answer is not sufficient to answer question.")
     #     return self.answer_multi_hop_question(query, max_new_tokens=max_new_tokens, maximum_reasoning_steps=maximum_reasoning_steps, max_sub_question_answer_attempts=max_sub_question_answer_attempts, num_chunks=num_chunks, verbose=verbose)
+
+    #    def generate_text():
+            

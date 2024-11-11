@@ -14,6 +14,10 @@ class LLM(TransformerModel):
 
     def __init__(self, model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct", causal = True, quantized = True, use_gpu = True):
         
+        # If we have the model downloaded locally, use the local model.
+        if os.path.exists("models/Meta-Llama-3.1-8B-Instruct"):
+            model_name = "models/Meta-Llama-3.1-8B-Instruct"
+
         # hf_token = None
         # if os.path.exists(hf_token_path):
         #     with open(hf_token_path, "r", encoding="utf-8") as token_file:
