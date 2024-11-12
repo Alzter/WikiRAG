@@ -39,15 +39,19 @@ class EmbeddingModel(TransformerModel):
         inp = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
 
         with torch.no_grad():
-            output = self.model(**inp)
+            # output = self.model(**inp)
+            output = self.model(**inp, output_hidden_states=True)
 
         # The self.model is optimized to use the mean pooling for queries,
         # while the sentence / document embedding uses the [CLS] representation.
 
         if input_is_query:
-            vectors = output.last_hidden_state * inp["attention_mask"].unsqueeze(2)
+            # vectors = output.last_hidden_state * inp["attention_mask"].unsqueeze(2)
+            vectors = output.hidden_states * inp["attention_mask"].unsqueeze(2)
             vectors = vectors.sum(dim=1) / inp["attention_mask"].sum(dim=-1).view(-1, 1)
         else:
-            vectors = output.last_hidden_state[:, 0, :]
+            # vectors = output.last_hidden_state[:, 0, :]
+            vectors = output.hidden_states[-1][:, 0, :]
+            
 
         return vectors

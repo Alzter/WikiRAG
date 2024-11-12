@@ -29,9 +29,24 @@ class TransformerModel(ABC):
 
         print(f"Loading transformer model and tokenizer from transformers library: {model_name}\nPlease wait...\n")
 
-        model_method = AutoModelForCausalLM if causal else AutoModel
-        
-        self.model = model_method.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config, token=os.getenv('HF_TOKEN'))
-        
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config, token=os.getenv('HF_TOKEN'))
-    
+        if os.path.exists(model_name):
+            # Load model in local if existed
+            print(f"Loading {model_name} from local\nPlease wait...\n")
+
+            self.model = AutoModelForCausalLM.from_pretrained(f"./models/Meta-Llama-3.1-8B-Instruct")
+
+            self.tokenizer = AutoTokenizer.from_pretrained("./models/NoInstruct-small-Embedding-v0")
+
+        else:
+            model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+            model_method = AutoModelForCausalLM if causal else AutoModel
+            
+            self.model = model_method.from_pretrained(model_name, trust_remote_code=True, device_map=self.device, quantization_config = quantization_config)#, token=os.getenv('HF_TOKEN'))
+            
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device_map=self.device,output_hidden_states=True)#, quantization_config = quantization_config)#, token=os.getenv('HF_TOKEN'))
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+
+            self.model.save_pretrained("models/Meta-Llama-3.1-8B-Instruct")
+            self.tokenizer.save_pretrained("models/NoInstruct-small-Embedding-v0")  
+            
