@@ -1,9 +1,3 @@
----
-title: RAG_-_Project_C_Team_5
-app_file: app.py
-sdk: gradio
-sdk_version: 5.3.0
----
 # WikiRAG
 COS30018 Project C - Team 5 GitHub Repo
 
