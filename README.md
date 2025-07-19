@@ -4,16 +4,18 @@ app_file: app.py
 sdk: gradio
 sdk_version: 5.3.0
 ---
-# COS30018 Project C - Team 5 GitHub Repo
+# WikiRAG
+COS30018 Project C - Team 5 GitHub Repo
 
-**Project C Survival**
+WikiRAG is a novel Retrieval Augmented Generation network designed to run on limited hardware using locally-run Large Language Models.
+It contains tools to generate your own knowledge base from a dump of Wikipedia, or your own PDF files.
 
-Maintained by:
-- Alex
-- Matt
-- Toan
+WikiRAG was created as part of a research project for Prof. Bao Vo for Swinburne University in 2024 with the aim of reducing hallucinations in LLMs.
+For general project information / context, please see the [Project Presentation](https://github.com/Alzter/WikiRAG/blob/main/docs/WikiRAG%20-%20Project%20Presentation.pdf).
 
 # Installation
+For detailed installation instructions, see the System Installation Guide chapter of the [Project Summary Report](https://github.com/Alzter/WikiRAG/blob/main/docs/WikiRAG%20-%20Project%20Summary%20Report.pdf).
+
 Create a Python virtual environment using Python 3.10.4
 
 `git clone` the repository and`cd` into the project repository directory.
